@@ -1,41 +1,22 @@
-import React, { useEffect, useState } from "react";
-import socket from "../socket";
+import React, { useState } from "react";
+import StockGraph from "./StockGraph";
 
-const StockTicker = () => {
-  const [stocks, setStocks] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Pagination states
+const StockTicker = ({ stocks, loading }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const stocksPerPage = 10; // Number of stocks per page
+  const [selectedStock, setSelectedStock] = useState(null);
 
-  useEffect(() => {
-    // Listen for stock updates
-    socket.on("stockUpdate", (data) => {
-      setStocks(data);
-      setLoading(false); // Data received, stop loading
-    });
+  const stocksPerPage = 5;
 
-    // Cleanup on unmount
-    return () => {
-      socket.off("stockUpdate");
-    };
-  }, []);
-
-  // Pagination calculations
   const indexOfLastStock = currentPage * stocksPerPage;
   const indexOfFirstStock = indexOfLastStock - stocksPerPage;
   const currentStocks = stocks.slice(indexOfFirstStock, indexOfLastStock);
 
   const totalPages = Math.ceil(stocks.length / stocksPerPage);
 
-  // Handle page change
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
+  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="w-full h-full mx-auto p-6 bg-white overflow-y-auto">
+    <div className="w-full mx-auto p-1 bg-white">
       <h1 className="text-2xl font-bold text-center text-gray-800 mb-4">
         Real-Time Stock Prices
       </h1>
@@ -71,7 +52,10 @@ const StockTicker = () => {
               {currentStocks.map((stock, index) => (
                 <tr
                   key={index}
-                  className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
+                  onClick={() => setSelectedStock(stock)}
+                  className={`cursor-pointer ${
+                    index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                  } hover:bg-blue-100`}
                 >
                   <td className="px-4 py-2 border border-gray-300">
                     {stock.ticker}
@@ -96,7 +80,6 @@ const StockTicker = () => {
             </tbody>
           </table>
 
-          {/* Pagination Controls */}
           <div className="flex justify-center items-center mt-4 space-x-2">
             {Array.from({ length: totalPages }, (_, i) => (
               <button
@@ -112,6 +95,18 @@ const StockTicker = () => {
               </button>
             ))}
           </div>
+
+          {selectedStock && (
+            <div className="mt-8">
+              <h2 className="text-xl font-bold text-center">
+                {selectedStock.ticker} Price Trend
+              </h2>
+              <StockGraph
+                stockHistory={selectedStock.history}
+                ticker={selectedStock.ticker}
+              />
+            </div>
+          )}
         </>
       )}
     </div>

@@ -16,7 +16,8 @@ export default function Navbar({ darkMode, toggleDarkMode }) {
 
   const handleLogout = async () => {};
 
-  const showSideToggle = location.pathname === "/";
+  const showSideToggle =
+    location.pathname === "/dashboard" || location.pathname === "/admin";
 
   // Close modal if clicking outside of it
   useEffect(() => {
@@ -88,7 +89,11 @@ export default function Navbar({ darkMode, toggleDarkMode }) {
             <div className="relative" ref={userRef}>
               <h2
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="cursor-pointer bg-gray-100 dark:bg-slate-500 rounded-md p-2 px-4 flex items-center text-center"
+                className={`cursor-pointer bg-gray-100 dark:bg-slate-500 rounded-md p-2 px-4 flex items-center text-center ${
+                  location.pathname === "/account"
+                    ? "border-b-2 border-blue-400"
+                    : ""
+                }`}
               >
                 email@gmail.com{" "}
                 {isDropdownOpen ? <MdExpandLess /> : <MdExpandMore />}

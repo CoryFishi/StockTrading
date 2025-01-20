@@ -28,6 +28,9 @@ const stocks = [
     volume: 1000,
     dayHigh: 150,
     dayLow: 150,
+    history: [],
+    dayStart: 150,
+    dayEnd: null,
   },
   {
     ticker: "GOOGL",
@@ -36,6 +39,9 @@ const stocks = [
     volume: 500,
     dayHigh: 2800,
     dayLow: 2800,
+    history: [],
+    dayStart: 2800,
+    dayEnd: null,
   },
   {
     ticker: "TSLA",
@@ -44,6 +50,9 @@ const stocks = [
     volume: 300,
     dayHigh: 900,
     dayLow: 900,
+    history: [],
+    dayStart: 900,
+    dayEnd: null,
   },
   {
     ticker: "AMZN",
@@ -52,6 +61,9 @@ const stocks = [
     volume: 700,
     dayHigh: 3400,
     dayLow: 3400,
+    history: [],
+    dayStart: 3400,
+    dayEnd: null,
   },
   {
     ticker: "MSFT",
@@ -60,6 +72,9 @@ const stocks = [
     volume: 1200,
     dayHigh: 310,
     dayLow: 310,
+    history: [],
+    dayStart: 310,
+    dayEnd: null,
   },
   {
     ticker: "NFLX",
@@ -68,6 +83,9 @@ const stocks = [
     volume: 400,
     dayHigh: 680,
     dayLow: 680,
+    history: [],
+    dayStart: 680,
+    dayEnd: null,
   },
   {
     ticker: "NVDA",
@@ -76,6 +94,9 @@ const stocks = [
     volume: 800,
     dayHigh: 230,
     dayLow: 230,
+    history: [],
+    dayStart: 230,
+    dayEnd: null,
   },
   {
     ticker: "FB",
@@ -84,6 +105,9 @@ const stocks = [
     volume: 600,
     dayHigh: 330,
     dayLow: 330,
+    history: [],
+    dayStart: 330,
+    dayEnd: null,
   },
   {
     ticker: "DIS",
@@ -92,6 +116,9 @@ const stocks = [
     volume: 500,
     dayHigh: 150,
     dayLow: 150,
+    history: [],
+    dayStart: 150,
+    dayEnd: null,
   },
   {
     ticker: "PYPL",
@@ -100,6 +127,9 @@ const stocks = [
     volume: 450,
     dayHigh: 200,
     dayLow: 200,
+    history: [],
+    dayStart: 200,
+    dayEnd: null,
   },
   {
     ticker: "ORCL",
@@ -108,6 +138,9 @@ const stocks = [
     volume: 900,
     dayHigh: 95,
     dayLow: 95,
+    history: [],
+    dayStart: 95,
+    dayEnd: null,
   },
   {
     ticker: "ADBE",
@@ -116,110 +149,9 @@ const stocks = [
     volume: 300,
     dayHigh: 600,
     dayLow: 600,
-  },
-  {
-    ticker: "INTC",
-    company: "Intel Corp.",
-    price: 55,
-    volume: 1100,
-    dayHigh: 55,
-    dayLow: 55,
-  },
-  {
-    ticker: "CSCO",
-    company: "Cisco Systems Inc.",
-    price: 60,
-    volume: 950,
-    dayHigh: 60,
-    dayLow: 60,
-  },
-  {
-    ticker: "AMD",
-    company: "Advanced Micro Devices Inc.",
-    price: 125,
-    volume: 850,
-    dayHigh: 125,
-    dayLow: 125,
-  },
-  {
-    ticker: "CRM",
-    company: "Salesforce.com Inc.",
-    price: 250,
-    volume: 400,
-    dayHigh: 250,
-    dayLow: 250,
-  },
-  {
-    ticker: "SQ",
-    company: "Block Inc.",
-    price: 220,
-    volume: 500,
-    dayHigh: 220,
-    dayLow: 220,
-  },
-  {
-    ticker: "TWTR",
-    company: "Twitter Inc.",
-    price: 45,
-    volume: 1000,
-    dayHigh: 45,
-    dayLow: 45,
-  },
-  {
-    ticker: "UBER",
-    company: "Uber Technologies Inc.",
-    price: 50,
-    volume: 1300,
-    dayHigh: 50,
-    dayLow: 50,
-  },
-  {
-    ticker: "LYFT",
-    company: "Lyft Inc.",
-    price: 60,
-    volume: 700,
-    dayHigh: 60,
-    dayLow: 60,
-  },
-  {
-    ticker: "SHOP",
-    company: "Shopify Inc.",
-    price: 1450,
-    volume: 200,
-    dayHigh: 1450,
-    dayLow: 1450,
-  },
-  {
-    ticker: "SPOT",
-    company: "Spotify Technology SA",
-    price: 300,
-    volume: 400,
-    dayHigh: 300,
-    dayLow: 300,
-  },
-  {
-    ticker: "BA",
-    company: "The Boeing Co.",
-    price: 240,
-    volume: 350,
-    dayHigh: 240,
-    dayLow: 240,
-  },
-  {
-    ticker: "SNAP",
-    company: "Snap Inc.",
-    price: 65,
-    volume: 1000,
-    dayHigh: 65,
-    dayLow: 65,
-  },
-  {
-    ticker: "COST",
-    company: "Costco Wholesale Corp.",
-    price: 510,
-    volume: 400,
-    dayHigh: 510,
-    dayLow: 510,
+    history: [],
+    dayStart: 600,
+    dayEnd: null,
   },
 ];
 
@@ -230,17 +162,28 @@ function updateStockPrices() {
     const change = (Math.random() - 0.5) * 2; // Random change between -1 and 1
     const newPrice = Math.max(currentPrice + change, 0); // Ensure non-negative price
 
-    // Update day high and day low
-    stock.dayHigh = stock.dayHigh
-      ? Math.max(stock.dayHigh, newPrice)
-      : newPrice;
-    stock.dayLow = stock.dayLow ? Math.min(stock.dayLow, newPrice) : newPrice;
-
-    // Update the current price
+    // Update stock details
     stock.price = newPrice.toFixed(2);
+    stock.dayHigh = Math.max(stock.dayHigh, newPrice);
+    stock.dayLow = Math.min(stock.dayLow, newPrice);
+
+    // Update dayEnd to reflect the latest price
+    stock.dayEnd = newPrice;
+
+    // Add the new price to the history array
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes()
+    ).padStart(2, "0")}`;
+    stock.history.push({ time, price: newPrice });
+
+    // Keep only the last 20 data points to limit memory usage
+    if (stock.history.length > 20) {
+      stock.history.shift();
+    }
   });
 
-  // Emit updated stock data
+  // Emit updated stocks
   io.emit("stockUpdate", stocks);
 }
 

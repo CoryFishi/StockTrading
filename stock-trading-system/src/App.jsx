@@ -2,9 +2,15 @@ import { Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import StockTicker from "./components/StockTicker";
 import Dashboard from "./pages/Dashboard";
+import Home from "./pages/Home";
+import Admin from "./pages/Admin";
+import Account from "./pages/Account";
+import socket from "./socket";
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(false);
+  const [stocks, setStocks] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Toggle dark mode and save preference to localStorage
   const toggleDarkMode = () => {
@@ -27,19 +33,33 @@ export default function App() {
     }
   }, []);
 
+  useEffect(() => {
+    socket.on("stockUpdate", (data) => {
+      setStocks(data);
+      setLoading(false);
+    });
+
+    return () => {
+      socket.off("stockUpdate");
+    };
+  }, []);
+
   return (
     <>
       <Routes>
         <Route
           path="/"
-          element={
-            <Dashboard darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
-          }
+          element={<Home darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}
         />
         <Route
           path="/dashboard"
           element={
-            <Dashboard darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+            <Dashboard
+              darkMode={darkMode}
+              toggleDarkMode={toggleDarkMode}
+              stocks={stocks}
+              loading={loading}
+            />
           }
         />
         <Route
@@ -57,7 +77,13 @@ export default function App() {
         <Route
           path="/admin"
           element={
-            <Dashboard darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+            <Admin darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+          }
+        />
+        <Route
+          path="/account"
+          element={
+            <Account darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
           }
         />
         <Route
