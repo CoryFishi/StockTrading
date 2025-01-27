@@ -49,7 +49,7 @@ const TopStocks = ({ stocks, loading }) => {
           </thead>
           <tbody>
             {topStocks.map((stock) => (
-              <tr key={stock.ticker} className="hover:bg-blue-50">
+              <tr key={stock.id} className="hover:bg-blue-50">
                 <td className="px-4 py-2 border border-gray-300">
                   {stock.ticker}
                 </td>

@@ -3,17 +3,8 @@ import socket from "../socket";
 
 const MyStocks = ({ stocks }) => {
   const [myStocks, setMyStocks] = useState([
-    { ticker: "AAPL", company: "Apple Inc.", shares: 10, purchasePrice: 140 },
-    { ticker: "TSLA", company: "Tesla Inc.", shares: 5, purchasePrice: 850 },
-    {
-      ticker: "AMZN",
-      company: "Amazon.com Inc.",
-      shares: 2,
-      purchasePrice: 3450,
-    },
-    { ticker: "NFLX", company: "Netflix Inc.", shares: 3, purchasePrice: 700 },
-    { ticker: "GOOGL", company: "Google Inc.", shares: 4, purchasePrice: 2750 },
-    { ticker: "NVDA", company: "NVIDIA Corp.", shares: 63, purchasePrice: 230 },
+    { ticker: "AAPL", company: "Apple", shares: 10, purchasePrice: 140 },
+    { ticker: "BBL", company: "Jesus", shares: 10, purchasePrice: 120 },
   ]);
 
   const [currentPrices, setCurrentPrices] = useState({});

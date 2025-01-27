@@ -1,3 +1,5 @@
+import AddStockForm from "../components/AddStockForm";
+import HomeComp from "../components/HomeComp";
 import Navbar from "../components/Navbar";
 import StockTicker from "../components/StockTicker";
 
@@ -6,7 +8,7 @@ export default function Home({ darkMode, toggleDarkMode }) {
     <div className="h-screen flex flex-col">
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
       <div className="flex-1 overflow-auto">
-        <h1>Home Page</h1>
+        <HomeComp />
       </div>
     </div>
   );

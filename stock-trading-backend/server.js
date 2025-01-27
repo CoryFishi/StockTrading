@@ -3,6 +3,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
+const mysql = require("mysql2");
 
 const app = express();
 const server = http.createServer(app);
@@ -19,172 +20,102 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json()); // Parse JSON bodies
 
-// Dummy stocks data
-const stocks = [
-  {
-    ticker: "AAPL",
-    company: "Apple Inc.",
-    price: 150,
-    volume: 1000,
-    dayHigh: 150,
-    dayLow: 150,
-    history: [],
-    dayStart: 150,
-    dayEnd: null,
-  },
-  {
-    ticker: "GOOGL",
-    company: "Google Inc.",
-    price: 2800,
-    volume: 500,
-    dayHigh: 2800,
-    dayLow: 2800,
-    history: [],
-    dayStart: 2800,
-    dayEnd: null,
-  },
-  {
-    ticker: "TSLA",
-    company: "Tesla Inc.",
-    price: 900,
-    volume: 300,
-    dayHigh: 900,
-    dayLow: 900,
-    history: [],
-    dayStart: 900,
-    dayEnd: null,
-  },
-  {
-    ticker: "AMZN",
-    company: "Amazon.com Inc.",
-    price: 3400,
-    volume: 700,
-    dayHigh: 3400,
-    dayLow: 3400,
-    history: [],
-    dayStart: 3400,
-    dayEnd: null,
-  },
-  {
-    ticker: "MSFT",
-    company: "Microsoft Corp.",
-    price: 310,
-    volume: 1200,
-    dayHigh: 310,
-    dayLow: 310,
-    history: [],
-    dayStart: 310,
-    dayEnd: null,
-  },
-  {
-    ticker: "NFLX",
-    company: "Netflix Inc.",
-    price: 680,
-    volume: 400,
-    dayHigh: 680,
-    dayLow: 680,
-    history: [],
-    dayStart: 680,
-    dayEnd: null,
-  },
-  {
-    ticker: "NVDA",
-    company: "NVIDIA Corp.",
-    price: 230,
-    volume: 800,
-    dayHigh: 230,
-    dayLow: 230,
-    history: [],
-    dayStart: 230,
-    dayEnd: null,
-  },
-  {
-    ticker: "FB",
-    company: "Meta Platforms Inc.",
-    price: 330,
-    volume: 600,
-    dayHigh: 330,
-    dayLow: 330,
-    history: [],
-    dayStart: 330,
-    dayEnd: null,
-  },
-  {
-    ticker: "DIS",
-    company: "The Walt Disney Co.",
-    price: 150,
-    volume: 500,
-    dayHigh: 150,
-    dayLow: 150,
-    history: [],
-    dayStart: 150,
-    dayEnd: null,
-  },
-  {
-    ticker: "PYPL",
-    company: "PayPal Holdings Inc.",
-    price: 200,
-    volume: 450,
-    dayHigh: 200,
-    dayLow: 200,
-    history: [],
-    dayStart: 200,
-    dayEnd: null,
-  },
-  {
-    ticker: "ORCL",
-    company: "Oracle Corp.",
-    price: 95,
-    volume: 900,
-    dayHigh: 95,
-    dayLow: 95,
-    history: [],
-    dayStart: 95,
-    dayEnd: null,
-  },
-  {
-    ticker: "ADBE",
-    company: "Adobe Inc.",
-    price: 600,
-    volume: 300,
-    dayHigh: 600,
-    dayLow: 600,
-    history: [],
-    dayStart: 600,
-    dayEnd: null,
-  },
-];
+// Database connection
+const db = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+});
+
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection failed:", err);
+  } else {
+    console.log("Connected to the database");
+  }
+});
 
 // Function to simulate stock price updates
 function updateStockPrices() {
-  stocks.forEach((stock) => {
-    const currentPrice = parseFloat(stock.price);
-    const change = (Math.random() - 0.5) * 2; // Random change between -1 and 1
-    const newPrice = Math.max(currentPrice + change, 0); // Ensure non-negative price
-
-    // Update stock details
-    stock.price = newPrice.toFixed(2);
-    stock.dayHigh = Math.max(stock.dayHigh, newPrice);
-    stock.dayLow = Math.min(stock.dayLow, newPrice);
-
-    // Update dayEnd to reflect the latest price
-    stock.dayEnd = newPrice;
-
-    // Add the new price to the history array
-    const now = new Date();
-    const time = `${String(now.getHours()).padStart(2, "0")}:${String(
-      now.getMinutes()
-    ).padStart(2, "0")}`;
-    stock.history.push({ time, price: newPrice });
-
-    // Keep only the last 20 data points to limit memory usage
-    if (stock.history.length > 20) {
-      stock.history.shift();
+  console.log("Updating stock prices...");
+  db.query("SELECT * FROM stocks", (err, results) => {
+    if (err) {
+      console.error("Error fetching stocks:", err);
+      return;
     }
-  });
 
-  // Emit updated stocks
-  io.emit("stockUpdate", stocks);
+    results.forEach((stock) => {
+      const currentPrice = parseFloat(stock.price);
+      const change = (Math.random() - 0.5) * 10; // Random change between -1 and 1
+      const newPrice = Math.max(currentPrice + change, 0);
+      const dayHigh = Math.max(stock.dayHigh, newPrice);
+      const dayLow = Math.min(stock.dayLow, newPrice);
+
+      let history = [];
+      try {
+        history = stock.history;
+        if (!Array.isArray(history)) {
+          console.warn(
+            `History for stock ${stock.id} is not an array. Resetting to []`
+          );
+          history = [];
+        }
+      } catch (error) {
+        console.error(
+          `Error parsing stock history for stock ${stock.id}:`,
+          error
+        );
+        history = [];
+      }
+
+      // Add the new price to the history
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(
+        now.getMinutes()
+      ).padStart(2, "0")}`;
+      history.push({ time, price: newPrice.toFixed(2) });
+
+      // Limit the history to the last 20 entries
+      if (history.length > 20) {
+        history.shift();
+      }
+
+      // Update stock details in the database
+      const query = `
+        UPDATE stocks
+        SET price = ?, dayHigh = ?, dayLow = ?, dayEnd = ?, history = ?
+        WHERE id = ?
+      `;
+      db.query(
+        query,
+        [
+          newPrice.toFixed(2),
+          dayHigh,
+          dayLow,
+          newPrice.toFixed(2),
+          JSON.stringify(history), // Store as valid JSON
+          stock.id,
+        ],
+        (err) => {
+          if (err) {
+            console.error(`Error updating stock ${stock.ticker}:`, err);
+          }
+        }
+      );
+    });
+
+    // Emit updated stocks to clients
+    db.query("SELECT * FROM stocks", (err, updatedStocks) => {
+      if (err) {
+        console.error("Error fetching updated stocks:", err);
+        return;
+      }
+
+      io.emit("stockUpdate", updatedStocks);
+    });
+  });
 }
 
 // WebSocket connection
@@ -192,7 +123,13 @@ io.on("connection", (socket) => {
   console.log("Client connected");
 
   // Send initial stock data to the connected client
-  socket.emit("stockUpdate", stocks);
+  db.query("SELECT * FROM stocks", (err, results) => {
+    if (err) {
+      console.error("Error fetching initial stocks:", err);
+      return;
+    }
+    socket.emit("stockUpdate", results);
+  });
 
   // Handle client disconnection
   socket.on("disconnect", () => {
@@ -200,11 +137,90 @@ io.on("connection", (socket) => {
   });
 });
 
-// Update stock prices every second
-setInterval(updateStockPrices, 5000);
+// Update stock prices every 30 seconds
+setInterval(updateStockPrices, 30000);
 
-// Start the server
-const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+//
+app.get("/data", (req, res) => {
+  db.query("SELECT * FROM stocks", (err, results) => {
+    if (err) {
+      res.status(500).send("Database query failed");
+    } else {
+      res.json(results);
+    }
+  });
+});
+
+// Endpoint to add a new stock
+app.post("/addStock", (req, res) => {
+  const { ticker, company, price, volume, dayHigh, dayLow, dayStart, dayEnd } =
+    req.body;
+
+  if (!ticker || !company || !price || !volume) {
+    return res
+      .status(400)
+      .json({ error: "Ticker, company, price, and volume are required" });
+  }
+
+  const query = `
+      INSERT INTO stocks (ticker, company, price, volume, dayHigh, dayLow, dayStart, dayEnd, history)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    query,
+    [
+      ticker,
+      company,
+      price,
+      volume,
+      dayHigh || price,
+      dayLow || price,
+      dayStart || price,
+      dayEnd || price,
+      JSON.stringify([]), // Initialize history as an empty array
+    ],
+    (err, results) => {
+      if (err) {
+        console.error("Error adding stock:", err);
+        return res.status(500).json({ error: "Database query failed" });
+      }
+
+      res.status(201).json({
+        message: "Stock added successfully",
+        stockId: results.insertId,
+      });
+    }
+  );
+});
+
+//
+app.delete("/deleteStock/:id", (req, res) => {
+  const { id } = req.params;
+
+  const query = "DELETE FROM stocks WHERE id = ?";
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error deleting stock:", err);
+      return res.status(500).json({ error: "Database query failed" });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: "Stock not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: `Stock with id ${id} deleted successfully` });
+  });
+});
+
+// Start HTTP server
+app.listen(3001, () => {
+  console.log("Server running on port 3001");
+});
+
+// Start WebSocket server
+server.listen(4000, () => {
+  console.log("Socket.IO server running on http://localhost:4000");
 });

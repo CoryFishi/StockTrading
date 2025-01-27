@@ -11,7 +11,6 @@ import {
   Legend,
 } from "chart.js";
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -22,16 +21,16 @@ ChartJS.register(
   Legend
 );
 
-const StockGraph = ({ stockHistory, ticker }) => {
+const StockGraph = ({ stockHistory = [], ticker }) => {
   const data = {
-    labels: stockHistory.map((point) => point.time), // Time labels
+    labels: stockHistory.map((point) => point.time || ""),
     datasets: [
       {
-        label: `${ticker} Price`,
-        data: stockHistory.map((point) => point.price), // Stock prices
+        label: `${ticker || "Stock"} Price`,
+        data: stockHistory.map((point) => Number(point.price) || 0),
         borderColor: "rgba(75, 192, 192, 1)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
-        tension: 0.3, // Smoother curve
+        tension: 0.3,
       },
     ],
   };
@@ -68,7 +67,11 @@ const StockGraph = ({ stockHistory, ticker }) => {
 
   return (
     <div className="h-64 w-full">
-      <Line data={data} options={options} />
+      {data.labels.length > 0 ? (
+        <Line data={data} options={options} />
+      ) : (
+        <p className="text-center text-gray-500">No data available</p>
+      )}
     </div>
   );
 };

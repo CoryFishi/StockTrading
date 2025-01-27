@@ -5,7 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import Home from "./pages/Home";
 import Admin from "./pages/Admin";
 import Account from "./pages/Account";
-import socket from "./socket";
+import { io } from "socket.io-client";
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -34,13 +34,31 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    socket.on("stockUpdate", (data) => {
-      setStocks(data);
-      setLoading(false);
+    const fetchStocks = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/data");
+        const data = await response.json();
+        setStocks(data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching stock data:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchStocks();
+
+    // Connect to the Socket.IO server
+    const socket = io("http://localhost:4000");
+
+    // Listen for real-time updates
+    socket.on("stockUpdate", (updatedStocks) => {
+      setStocks(updatedStocks);
     });
 
+    // Clean up the socket connection
     return () => {
-      socket.off("stockUpdate");
+      socket.disconnect();
     };
   }, []);
 

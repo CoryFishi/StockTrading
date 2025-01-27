@@ -51,7 +51,7 @@ const StockTicker = ({ stocks, loading }) => {
             <tbody>
               {currentStocks.map((stock, index) => (
                 <tr
-                  key={index}
+                  key={stock.id}
                   onClick={() => setSelectedStock(stock)}
                   className={`cursor-pointer ${
                     index % 2 === 0 ? "bg-gray-50" : "bg-white"
@@ -61,19 +61,19 @@ const StockTicker = ({ stocks, loading }) => {
                     {stock.ticker}
                   </td>
                   <td className="px-4 py-2 border border-gray-300">
-                    ${stock.price}
+                    ${Number(stock.price).toFixed(2)}
                   </td>
                   <td className="px-4 py-2 border border-gray-300">
                     {stock.volume}
                   </td>
                   <td className="px-4 py-2 border border-gray-300">
-                    ${(stock.price * stock.volume).toFixed(2)}
+                    ${(Number(stock.price) * Number(stock.volume)).toFixed(2)}
                   </td>
                   <td className="px-4 py-2 border border-gray-300">
-                    ${stock.dayHigh.toFixed(2) || stock.price.toFixed(2)}
+                    ${Number(stock.dayHigh || stock.price).toFixed(2)}
                   </td>
                   <td className="px-4 py-2 border border-gray-300">
-                    ${stock.dayLow.toFixed(2) || stock.price.toFixed(2)}
+                    ${Number(stock.dayLow || stock.price).toFixed(2)}
                   </td>
                 </tr>
               ))}
@@ -98,7 +98,10 @@ const StockTicker = ({ stocks, loading }) => {
 
           {selectedStock && (
             <div className="mt-8">
-              <h2 className="text-xl font-bold text-center">
+              <h2
+                className="text-xl font-bold text-center"
+                onClick={() => console.log(selectedStock.history)}
+              >
                 {selectedStock.ticker} Price Trend
               </h2>
               <StockGraph
