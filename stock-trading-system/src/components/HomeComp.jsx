@@ -6,7 +6,7 @@ const HomeComp = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3001/data")
+      .get("http://23.22.184.219/api/data")
       .then((response) => {
         setData(response.data);
         console.log(response.data);

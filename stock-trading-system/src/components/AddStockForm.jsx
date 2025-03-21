@@ -26,7 +26,7 @@ const AddStockForm = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3001/addStock",
+        "http://23.22.184.219/api/addStock",
         formData
       );
       setMessage(response.data.message || "Stock added successfully!");

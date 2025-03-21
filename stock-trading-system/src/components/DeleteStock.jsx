@@ -15,7 +15,7 @@ const DeleteStock = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:3001/deleteStock/${stockId}`,
+        `http://23.22.184.219/api/deleteStock/${stockId}`,
         {
           method: "DELETE",
         }
