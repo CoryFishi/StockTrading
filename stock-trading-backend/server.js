@@ -246,6 +246,12 @@ app.delete("/deleteStock/:id", (req, res) => {
   });
 });
 
+
+// New API Endpoint
+app.get("/api/your-endpoint", (req, res) => {
+  res.json({ message: "API is working!", timestamp: new Date().toISOString() });
+});
+
 // Start HTTP server
 app.listen(3001, () => {
   console.log("Server running on port 3001");
