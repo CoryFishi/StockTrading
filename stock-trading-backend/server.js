@@ -14,7 +14,7 @@ const server = http.createServer(app);
 // Configure Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Frontend URL
+    origin: "http://23.22.184.219/api", // Frontend URL
     methods: ["GET", "POST"],
   },
 });
@@ -246,6 +246,9 @@ app.delete("/deleteStock/:id", (req, res) => {
   });
 });
 
+app.get("/", (req, res) => {
+  res.send("Welcome to the Stock Trading API!");
+});
 
 // New API Endpoint
 app.get("/api/your-endpoint", (req, res) => {
