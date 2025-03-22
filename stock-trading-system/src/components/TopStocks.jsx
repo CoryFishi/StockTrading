@@ -29,6 +29,8 @@ const TopStocks = ({ stocks, loading }) => {
       </h2>
       {topStocks.length === 0 ? (
         <p className="text-center text-gray-600">Loading top stocks...</p>
+      ) : bottomStocks.length === 0 ? (
+        <p className="text-center text-gray-600">No stocks available.</p>
       ) : (
         <table className="table-auto w-full border-collapse border border-gray-300">
           <thead>

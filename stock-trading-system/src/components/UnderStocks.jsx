@@ -29,7 +29,7 @@ const UnderStocks = ({ stocks, loading }) => {
       <h2 className="text-xl font-bold text-center text-gray-800 mb-4">
         Bottom 5 Performing Stocks
       </h2>
-      {bottomStocks.length === 0 ? (
+      {bottomStocbottomStocks && bottomStocks.length === 0 ? (
         <p className="text-center text-gray-600">Loading stocks...</p>
       ) : (
         <table className="table-auto w-full border-collapse border border-gray-300">
