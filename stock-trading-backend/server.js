@@ -6,7 +6,8 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-const mysql = require("mysql2");
+
+const db = require("./config/db");
 
 const app = express();
 const server = http.createServer(app);
@@ -14,7 +15,7 @@ const server = http.createServer(app);
 // Configure Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173", // Frontend URL
+    origin: process.env.FRONTEND_URL || "http://23.22.184.219", // Frontend URL
     methods: ["GET", "POST"],
   },
 });
@@ -46,7 +47,7 @@ db.connect((err) => {
   }
 });
 
-// Function to simulate stock price updates
+// Function to simulate and price updates
 function updateStockPrices() {
   console.log("Updating stock prices...");
   db.query("SELECT * FROM stocks", (err, results) => {
@@ -246,6 +247,9 @@ app.delete("/deleteStock/:id", (req, res) => {
   });
 });
 
+app.get("/", (req, res) => {
+  res.send("Welcome to the Stock Trading API!");
+});
 
 // New API Endpoint
 app.get("/api/your-endpoint", (req, res) => {
@@ -253,11 +257,13 @@ app.get("/api/your-endpoint", (req, res) => {
 });
 
 // Start HTTP server
-app.listen(3001, () => {
-  console.log("Server running on port 3001");
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 // Start WebSocket server
-server.listen(4000, () => {
-  console.log("Socket.IO server running on http://localhost:4000");
+const SOCKET_PORT = process.env.SOCKET_PORT || 4000;
+server.listen(SOCKET_PORT, () => {
+  console.log(`Socket.IO server running on port ${SOCKET_PORT}`);
 });
