@@ -24,28 +24,11 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json()); // Parse JSON bodies
 
-// Database connection
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-});
-
 AWS.config.update({ region: "us-east-1" });
 
 const s3 = new AWS.S3();
 const BUCKET_NAME = "stock-trading-uploads";
 
-
-db.connect((err) => {
-  if (err) {
-    console.error("Database connection failed:", err);
-  } else {
-    console.log("Connected to the database");
-  }
-});
 
 // Function to simulate and price updates
 function updateStockPrices() {
