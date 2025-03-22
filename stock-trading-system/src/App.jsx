@@ -7,6 +7,7 @@ import Admin from "./pages/Admin";
 import Account from "./pages/Account";
 import { io } from "socket.io-client";
 import API_BASE_URL from "./config.js";
+
 export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [stocks, setStocks] = useState([]);

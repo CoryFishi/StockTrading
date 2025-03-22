@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import API_BASE_URL from "../config.js";
-const DeleteStock = () => {
+import API_BASE_URL from "../config.js";const DeleteStock = () => {
   const [stockId, setStockId] = useState("");
   const [message, setMessage] = useState("");
 
