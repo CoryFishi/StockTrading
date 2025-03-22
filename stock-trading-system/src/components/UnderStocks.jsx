@@ -7,9 +7,11 @@ const UnderStocks = ({ stocks, loading }) => {
     if (stocks.length > 0) {
       // Calculate percentage change based on dayStart
       const stocksWithPerformance = stocks.map((stock) => {
-        const percentageChange =
-          ((stock.price - stock.dayStart) / stock.dayStart) * 100;
-        return { ...stock, percentageChange };
+      const price = parseFloat(stock.CurrentPrice);
+      const dayStart = parseFloat(stock.InitialPrice);
+      const percentageChange = ((stock.CurrentPrice - stock.InitialPrice) / stock.InitialPrice) * 100;
+
+      return { ...stock, percentageChange,ticker: stock.Ticker,company: stock.CompanyName,price, };
       });
 
       // Sort stocks by percentage change in ascending order
