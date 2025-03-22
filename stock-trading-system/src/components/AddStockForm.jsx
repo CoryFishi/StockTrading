@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import API_BASE_URL from "../config";
 
 const AddStockForm = () => {
   const [formData, setFormData] = useState({
@@ -26,7 +27,7 @@ const AddStockForm = () => {
 
     try {
       const response = await axios.post(
-        "http://23.22.184.219/api/addStock",
+        `${API_BASE_URL}/addStock`, 
         formData
       );
       setMessage(response.data.message || "Stock added successfully!");

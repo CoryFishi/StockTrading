@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import API_BASE_URL from "../config";
 
 const HomeComp = () => {
   const [data, setData] = useState([]);
 
   useEffect(() => {
     axios
-      .get("http://23.22.184.219/api/data")
+      .get(`${API_BASE_URL}/data`)
       .then((response) => {
         setData(response.data);
         console.log(response.data);

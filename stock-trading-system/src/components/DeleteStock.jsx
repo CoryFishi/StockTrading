@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import API_BASE_URL from "../config";
 
 const DeleteStock = () => {
   const [stockId, setStockId] = useState("");
@@ -15,7 +16,7 @@ const DeleteStock = () => {
 
     try {
       const response = await fetch(
-        `http://23.22.184.219/api/deleteStock/${stockId}`,
+        `${API_BASE_URL}/deleteStock/${stockId}`,
         {
           method: "DELETE",
         }

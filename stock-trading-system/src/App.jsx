@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import Admin from "./pages/Admin";
 import Account from "./pages/Account";
 import { io } from "socket.io-client";
+import API_BASE_URL from "../config";
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -36,7 +37,7 @@ export default function App() {
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        const response = await fetch("http://23.22.184.219/api/data");
+        const response = await fetch(`${API_BASE_URL}/data`);
         const data = await response.json();
         setStocks(data);
         setLoading(false);
