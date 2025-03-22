@@ -134,7 +134,7 @@ io.on("connection", (socket) => {
 setInterval(updateStockPrices, 30000);
 
 //
-app.get("/data", (req, res) => {
+app.get("/api/data", (req, res) => {
   db.query("SELECT * FROM stocks", (err, results) => {
     if (err) {
       res.status(500).send("Database query failed");
