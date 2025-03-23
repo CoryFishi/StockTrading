@@ -23,6 +23,8 @@ const StockTicker = ({ stocks, loading }) => {
 
       {loading ? (
         <p className="text-center text-gray-600">Loading stock data...</p>
+      ) : bottomStocks.length === 0 ? (
+        <p className="text-center text-gray-600">No stock data available.</p>
       ) : (
         <>
           <table className="table-auto w-full border-collapse border border-gray-300">

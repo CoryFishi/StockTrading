@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import API_BASE_URL from "../config";
-
-const HomeComp = () => {
+import API_BASE_URL from "../config.js";const HomeComp = () => {
   const [data, setData] = useState([]);
 
   useEffect(() => {

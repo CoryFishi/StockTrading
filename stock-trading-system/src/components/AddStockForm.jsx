@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import API_BASE_URL from "../config";
-
-const AddStockForm = () => {
+import API_BASE_URL from "../config.js";const AddStockForm = () => {
   const [formData, setFormData] = useState({
     ticker: "",
     company: "",
