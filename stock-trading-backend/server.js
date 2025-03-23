@@ -53,17 +53,17 @@ function updateStockPrices() {
       const dayLow = Math.min(sanitizeNumber(stock.dayLow, newPrice), newPrice);
       
       let history = [];
-
       try {
-        const parsed = JSON.parse(stock.history);
-        history = Array.isArray(parsed) ? parsed : [];
-        if (!Array.isArray(parsed)) {
+        history = stock.history;
+        if (!Array.isArray(history)) {
           console.warn(`History for stock ${stock.id} is not an array. Resetting to []`);
+          history = [];
         }
       } catch (error) {
-        console.error(`Error parsing stock history for stock ${stock.id}:`, error);
+        console.error(`Error handling stock history for stock ${stock.id}:`, error);
         history = [];
       }
+      
       
 
       // Add the new price to the history
