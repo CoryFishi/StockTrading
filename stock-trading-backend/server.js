@@ -6,9 +6,8 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
-
+const path = require("path");
 const db = require("./config/db");
-
 const app = express();
 const server = http.createServer(app);
 
@@ -252,4 +251,10 @@ app.listen(PORT, () => {
 const SOCKET_PORT = process.env.SOCKET_PORT || 4000;
 server.listen(SOCKET_PORT, () => {
   console.log(`Socket.IO server running on port ${SOCKET_PORT}`);
+});
+
+app.use(express.static(path.join(__dirname, "client")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client", "index.html"));
 });
