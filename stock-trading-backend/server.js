@@ -45,7 +45,7 @@ function updateStockPrices() {
     }
 
     results.forEach((stock) => {
-      const currentPrice = sanitizeNumber(stock.price);
+      const currentPrice = sanitizeNumber(stock.CurrentPrice);
       const change = (Math.random() - 0.5) * 10; // Random change between -1 and 1
       const newPrice = Math.max(currentPrice + change, 0);
       const dayHigh = Math.max(sanitizeNumber(stock.dayHigh, newPrice), newPrice);
@@ -80,7 +80,7 @@ function updateStockPrices() {
       // Update stock details in the database
       const query = `
         UPDATE stocks
-        SET price = ?, dayHigh = ?, dayLow = ?, dayEnd = ?, history = ?
+        SET CurrentPrice = ?, dayHigh = ?, dayLow = ?, dayEnd = ?, history = ?
         WHERE id = ?
       `;
       db.query(
