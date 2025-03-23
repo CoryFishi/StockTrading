@@ -50,7 +50,7 @@ export default function App() {
     fetchStocks();
 
     // Connect to the Socket.IO server
-    const socket = io("http://23.22.184.219:4000");
+    const socket = io("http://3.90.131.54:4000");
 
     // Listen for real-time updates
     socket.on("stockUpdate", (updatedStocks) => {

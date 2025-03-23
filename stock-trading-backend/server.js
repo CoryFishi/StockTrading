@@ -15,7 +15,7 @@ const server = http.createServer(app);
 // Configure Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://23.22.184.219", // Frontend URL
+    origin: process.env.FRONTEND_URL || "http://3.90.131.54", // Frontend URL
     methods: ["GET", "POST"],
   },
 });
