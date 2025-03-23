@@ -29,6 +29,12 @@ AWS.config.update({ region: "us-east-1" });
 const s3 = new AWS.S3();
 const BUCKET_NAME = "stock-trading-uploads";
 
+// Helper Function to sanatize for MYSQL db
+function sanitizeNumber(value, fallback = 0) {
+  const num = parseFloat(value);
+  return isNaN(num) ? fallback : num;
+}
+
 
 // Function to simulate and price updates
 function updateStockPrices() {
@@ -40,28 +46,25 @@ function updateStockPrices() {
     }
 
     results.forEach((stock) => {
-      const currentPrice = parseFloat(stock.price);
+      const currentPrice = sanitizeNumber(stock.price);
       const change = (Math.random() - 0.5) * 10; // Random change between -1 and 1
       const newPrice = Math.max(currentPrice + change, 0);
-      const dayHigh = Math.max(stock.dayHigh, newPrice);
-      const dayLow = Math.min(stock.dayLow, newPrice);
-
+      const dayHigh = Math.max(sanitizeNumber(stock.dayHigh, newPrice), newPrice);
+      const dayLow = Math.min(sanitizeNumber(stock.dayLow, newPrice), newPrice);
+      
       let history = [];
+
       try {
-        history = stock.history;
-        if (!Array.isArray(history)) {
-          console.warn(
-            `History for stock ${stock.id} is not an array. Resetting to []`
-          );
-          history = [];
+        const parsed = JSON.parse(stock.history);
+        history = Array.isArray(parsed) ? parsed : [];
+        if (!Array.isArray(parsed)) {
+          console.warn(`History for stock ${stock.id} is not an array. Resetting to []`);
         }
       } catch (error) {
-        console.error(
-          `Error parsing stock history for stock ${stock.id}:`,
-          error
-        );
+        console.error(`Error parsing stock history for stock ${stock.id}:`, error);
         history = [];
       }
+      
 
       // Add the new price to the history
       const now = new Date();
