@@ -38,6 +38,7 @@ function sanitizeNumber(value, fallback = 0) {
 // Function to simulate and price updates
 function updateStockPrices() {
   console.log("Updating stock prices...");
+
   db.query("SELECT * FROM stocks", (err, results) => {
     if (err) {
       console.error("Error fetching stocks:", err);
@@ -45,63 +46,33 @@ function updateStockPrices() {
     }
 
     results.forEach((stock) => {
-      const currentPrice = sanitizeNumber(stock.CurrentPrice);
-      const change = (Math.random() - 0.5) * 10; // Random change between -1 and 1
-      const newPrice = Math.max(currentPrice + change, 0);
-      const dayHigh = Math.max(sanitizeNumber(stock.dayHigh, newPrice), newPrice);
-      const dayLow = Math.min(sanitizeNumber(stock.dayLow, newPrice), newPrice);
-      
+      const currentPrice = parseFloat(stock.CurrentPrice);
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
       let history = [];
       try {
-        history = stock.history;
-        if (!Array.isArray(history)) {
-          console.warn(`History for stock ${stock.id} is not an array. Resetting to []`);
-          history = [];
-        }
-      } catch (error) {
-        console.error(`Error handling stock history for stock ${stock.id}:`, error);
+        history = JSON.parse(stock.history) || [];
+        if (!Array.isArray(history)) history = [];
+      } catch {
         history = [];
       }
-      
-      
 
-      // Add the new price to the history
-      const now = new Date();
-      const time = `${String(now.getHours()).padStart(2, "0")}:${String(
-        now.getMinutes()
-      ).padStart(2, "0")}`;
-      history.push({ time, price: newPrice.toFixed(2) });
+      // Append the current price to the history
+      history.push({ time, price: currentPrice.toFixed(2) });
+      if (history.length > 20) history.shift(); // Trim to last 20
 
-      // Limit the history to the last 20 entries
-      if (history.length > 20) {
-        history.shift();
-      }
-
-      // Update stock details in the database
-      const query = `
-        UPDATE stocks
-        SET CurrentPrice = ?, dayHigh = ?, dayLow = ?, dayEnd = ?, history = ?
-        WHERE id = ?
-      `;
+      // Update only the history field
       db.query(
-        query,
-        [
-          newPrice.toFixed(2),
-          dayHigh,
-          dayLow,
-          newPrice.toFixed(2),
-          JSON.stringify(history), // Store as valid JSON
-          stock.id,
-        ],
+        `UPDATE stocks SET history = ? WHERE id = ?`,
+        [JSON.stringify(history), stock.id],
         (err) => {
-          if (err) {
-            console.error(`Error updating stock ${stock.ticker}:`, err);
-          }
+          if (err) console.error(`Error updating history for ${stock.Ticker}:`, err);
         }
       );
     });
 
-    // Emit updated stocks to clients
+    // Emit updated stock data
     db.query("SELECT * FROM stocks", (err, updatedStocks) => {
       if (err) {
         console.error("Error fetching updated stocks:", err);
@@ -112,6 +83,7 @@ function updateStockPrices() {
     });
   });
 }
+
 
 // WebSocket connection
 io.on("connection", (socket) => {
@@ -195,10 +167,10 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 
   const params = {
-    Bucket: BUCKET_NAME, 
+    Bucket: BUCKET_NAME,
     Key: req.file.originalname, //s3 name
     Body: req.file.buffer,
-    ContentType: req.file.mimetype, 
+    ContentType: req.file.mimetype,
     ACL: "public-read",
   };
 
