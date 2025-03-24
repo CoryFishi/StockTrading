@@ -135,19 +135,19 @@ app.post("/api/addStock", (req, res) => {
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
-
   db.query(
     query,
     [
       ticker,
       company,
-      price,
+      price,               // InitialPrice
+      price,               // CurrentPrice (added this line)
       volume,
       dayHigh || price,
       dayLow || price,
       dayStart || price,
       dayEnd || price,
-      JSON.stringify([]), // Initialize history as an empty array
+      JSON.stringify([]),  // Initialize history as an empty array
     ],
     (err, results) => {
       if (err) {
