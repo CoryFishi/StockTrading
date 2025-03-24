@@ -127,13 +127,14 @@ app.post("/api/addStock", (req, res) => {
   if (!ticker || !company || !price || !volume) {
     return res
       .status(400)
-      .json({ error: "Ticker, company, price, and volume are required" });
+      .json({ error: "Ticker, Company, CurrentPrice, and Volume are required" });
   }
 
   const query = `
-      INSERT INTO stocks (ticker, company, price, volume, dayHigh, dayLow, dayStart, dayEnd, history)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+  INSERT INTO stocks (Ticker, CompanyName, InitialPrice, CurrentPrice, Volume, dayHigh, dayLow, dayStart, dayEnd, history)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
 
   db.query(
     query,
