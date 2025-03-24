@@ -96,7 +96,11 @@ export default function App() {
         <Route
           path="/admin"
           element={
-            <Admin darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+            <Admin
+              stocks={stocks}
+              darkMode={darkMode}
+              toggleDarkMode={toggleDarkMode}
+            />
           }
         />
         <Route
