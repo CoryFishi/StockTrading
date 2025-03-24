@@ -109,6 +109,7 @@ setInterval(updateStockPrices, 30000);
 
 //
 app.get("/api/data", (req, res) => {
+  console.log("/api/data was hit");
   db.query("SELECT * FROM stocks", (err, results) => {
     if (err) {
       res.status(500).send("Database query failed");
@@ -213,14 +214,6 @@ app.get("/api/your-endpoint", (req, res) => {
   res.json({ message: "API is working!", timestamp: new Date().toISOString() });
 });
 
-//Frontend
-app.use(express.static(path.join(__dirname, "client")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "client", "index.html"));
-});
-
-
 // Start HTTP server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
@@ -231,4 +224,11 @@ app.listen(PORT, () => {
 const SOCKET_PORT = process.env.SOCKET_PORT || 4000;
 server.listen(SOCKET_PORT, () => {
   console.log(`Socket.IO server running on port ${SOCKET_PORT}`);
+});
+
+//Frontend
+app.use(express.static(path.join(__dirname, "client")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "client", "index.html"));
 });
