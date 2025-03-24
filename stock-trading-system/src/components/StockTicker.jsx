@@ -52,7 +52,7 @@ const StockTicker = ({ stocks, loading }) => {
               {currentStocks.map((stock, index) => {
                 const ticker = stock.Ticker || stock.ticker || "N/A";
                 const company = stock.CompanyName || stock.company || "Unknown";
-                const price = parseFloat(stock.CurrentPrice || stock.price || 0);
+                const price = parseFloat(stock.CurrentPrice || 0);
                 const volume = parseFloat(stock.Volume || stock.volume || 0);
                 const dayHigh = parseFloat(stock.dayHigh ?? price);
                 const dayLow = parseFloat(stock.dayLow ?? price);
@@ -84,6 +84,7 @@ const StockTicker = ({ stocks, loading }) => {
               })}
             </tbody>
           </table>
+
           <div className="flex justify-center items-center mt-4 space-x-2">
             {Array.from({ length: totalPages }, (_, i) => (
               <button
@@ -101,16 +102,20 @@ const StockTicker = ({ stocks, loading }) => {
 
           {selectedStock && (
             <div className="mt-8">
-              <h2
-                className="text-xl font-bold text-center"
-                onClick={() => console.log(selectedStock.history)}
-              >
-                {selectedStock.ticker} Price Trend
-              </h2>
-              <StockGraph
-                stockHistory={selectedStock.history}
-                ticker={selectedStock.ticker}
-              />
+              {(() => {
+                const selectedTicker = selectedStock.Ticker || selectedStock.ticker || "Stock";
+                return (
+                  <>
+                    <h2 className="text-xl font-bold text-center">
+                      {selectedTicker} Price Trend
+                    </h2>
+                    <StockGraph
+                      stockHistory={selectedStock.history}
+                      ticker={selectedTicker}
+                    />
+                  </>
+                );
+              })()}
             </div>
           )}
         </>
