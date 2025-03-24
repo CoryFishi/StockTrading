@@ -5,7 +5,7 @@ import API_BASE_URL from "../config.js";const HomeComp = () => {
 
   useEffect(() => {
     axios
-      .get(`${API_BASE_URL}/data`)
+      .get(`${API_BASE_URL}/api/data`)
       .then((response) => {
         setData(response.data);
         console.log(response.data);

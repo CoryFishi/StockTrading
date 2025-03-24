@@ -23,8 +23,6 @@ const StockTicker = ({ stocks, loading }) => {
 
       {loading ? (
         <p className="text-center text-gray-600">Loading stock data...</p>
-      ) : bottomStocks.length === 0 ? (
-        <p className="text-center text-gray-600">No stock data available.</p>
       ) : (
         <>
           <table className="table-auto w-full border-collapse border border-gray-300">
@@ -51,34 +49,39 @@ const StockTicker = ({ stocks, loading }) => {
               </tr>
             </thead>
             <tbody>
-              {currentStocks.map((stock, index) => (
-                <tr
-                  key={stock.id}
-                  onClick={() => setSelectedStock(stock)}
-                  className={`cursor-pointer ${
-                    index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                  } hover:bg-blue-100`}
-                >
-                  <td className="px-4 py-2 border border-gray-300">
-                    {stock.ticker}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    ${Number(stock.price).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    {stock.volume}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    ${(Number(stock.price) * Number(stock.volume)).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    ${Number(stock.dayHigh || stock.price).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-2 border border-gray-300">
-                    ${Number(stock.dayLow || stock.price).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
+              {currentStocks.map((stock, index) => {
+                const ticker = stock.Ticker || stock.ticker || "N/A";
+                const company = stock.CompanyName || stock.company || "Unknown";
+                const price = parseFloat(stock.CurrentPrice || 0);
+                const volume = parseFloat(stock.Volume || stock.volume || 0);
+                const dayHigh = parseFloat(stock.dayHigh ?? price);
+                const dayLow = parseFloat(stock.dayLow ?? price);
+                const marketCap = price * volume;
+
+                return (
+                  <tr
+                    key={stock.id}
+                    onClick={() => setSelectedStock(stock)}
+                    className={`cursor-pointer ${index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                      } hover:bg-blue-100`}
+                  >
+                    <td className="px-4 py-2 border border-gray-300">{ticker}</td>
+                    <td className="px-4 py-2 border border-gray-300">
+                      ${price.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2 border border-gray-300">{volume}</td>
+                    <td className="px-4 py-2 border border-gray-300">
+                      ${marketCap.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2 border border-gray-300">
+                      ${dayHigh.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2 border border-gray-300">
+                      ${dayLow.toFixed(2)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
@@ -87,11 +90,10 @@ const StockTicker = ({ stocks, loading }) => {
               <button
                 key={i + 1}
                 onClick={() => handlePageChange(i + 1)}
-                className={`px-4 py-2 border rounded ${
-                  currentPage === i + 1
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 hover:bg-blue-100"
-                }`}
+                className={`px-4 py-2 border rounded ${currentPage === i + 1
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 hover:bg-blue-100"
+                  }`}
               >
                 {i + 1}
               </button>
@@ -100,16 +102,20 @@ const StockTicker = ({ stocks, loading }) => {
 
           {selectedStock && (
             <div className="mt-8">
-              <h2
-                className="text-xl font-bold text-center"
-                onClick={() => console.log(selectedStock.history)}
-              >
-                {selectedStock.ticker} Price Trend
-              </h2>
-              <StockGraph
-                stockHistory={selectedStock.history}
-                ticker={selectedStock.ticker}
-              />
+              {(() => {
+                const selectedTicker = selectedStock.Ticker || selectedStock.ticker || "Stock";
+                return (
+                  <>
+                    <h2 className="text-xl font-bold text-center">
+                      {selectedTicker} Price Trend
+                    </h2>
+                    <StockGraph
+                      stockHistory={selectedStock.history}
+                      ticker={selectedTicker}
+                    />
+                  </>
+                );
+              })()}
             </div>
           )}
         </>

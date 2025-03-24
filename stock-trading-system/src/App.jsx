@@ -37,7 +37,7 @@ export default function App() {
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/data`);
+        const response = await fetch(`${API_BASE_URL}/api/data`);
         const data = await response.json();
         setStocks(data);
         setLoading(false);
@@ -50,7 +50,7 @@ export default function App() {
     fetchStocks();
 
     // Connect to the Socket.IO server
-    const socket = io("http://23.22.184.219:4000");
+    const socket = io("http://3.90.131.54:4000");
 
     // Listen for real-time updates
     socket.on("stockUpdate", (updatedStocks) => {

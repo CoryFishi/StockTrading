@@ -7,9 +7,18 @@ const TopStocks = ({ stocks, loading }) => {
     if (stocks.length > 0) {
       // Calculate percentage change based on dayStart
       const stocksWithPerformance = stocks.map((stock) => {
-        const percentageChange =
-          ((stock.price - stock.dayStart) / stock.dayStart) * 100;
-        return { ...stock, percentageChange };
+      const price = parseFloat(stock.CurrentPrice || stock.price);
+      const dayStart = parseFloat(stock.InitialPrice || stock.dayStart);
+      const percentageChange = ((price - dayStart) / dayStart) * 100;
+        
+        return {
+          ...stock,
+          percentageChange,
+          ticker: stock.Ticker,
+          company: stock.CompanyName,
+          price,
+        };
+        
       });
 
       // Sort stocks by percentage change in descending order
@@ -29,7 +38,7 @@ const TopStocks = ({ stocks, loading }) => {
       </h2>
       {topStocks.length === 0 ? (
         <p className="text-center text-gray-600">Loading top stocks...</p>
-      ) : bottomStocks.length === 0 ? (
+      ) : topStocks.length === 0 ? (
         <p className="text-center text-gray-600">No stocks available.</p>
       ) : (
         <table className="table-auto w-full border-collapse border border-gray-300">

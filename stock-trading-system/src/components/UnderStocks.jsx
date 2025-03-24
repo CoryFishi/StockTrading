@@ -5,21 +5,27 @@ const UnderStocks = ({ stocks, loading }) => {
 
   useEffect(() => {
     if (stocks.length > 0) {
-      // Calculate percentage change based on dayStart
+      // Calculate percentage change based on InitialPrice
       const stocksWithPerformance = stocks.map((stock) => {
-      const price = parseFloat(stock.CurrentPrice);
-      const dayStart = parseFloat(stock.InitialPrice);
-      const percentageChange = ((stock.CurrentPrice - stock.InitialPrice) / stock.InitialPrice) * 100;
+        const price = parseFloat(stock.CurrentPrice);
+        const dayStart = parseFloat(stock.InitialPrice);
+        const percentageChange =
+          ((price - dayStart) / dayStart) * 100;
 
-      return { ...stock, percentageChange,ticker: stock.Ticker,company: stock.CompanyName,price, };
+        return {
+          ...stock,
+          percentageChange,
+          ticker: stock.Ticker,
+          company: stock.CompanyName,
+          price,
+        };
       });
 
-      // Sort stocks by percentage change in ascending order
+      // Sort by worst performing
       const sortedStocks = stocksWithPerformance.sort(
         (a, b) => a.percentageChange - b.percentageChange
       );
 
-      // Get the bottom 5 stocks
       setBottomStocks(sortedStocks.slice(0, 5));
     }
   }, [stocks]);
@@ -29,7 +35,7 @@ const UnderStocks = ({ stocks, loading }) => {
       <h2 className="text-xl font-bold text-center text-gray-800 mb-4">
         Bottom 5 Performing Stocks
       </h2>
-      {bottomStocbottomStocks && bottomStocks.length === 0 ? (
+      {bottomStocks.length === 0 ? (
         <p className="text-center text-gray-600">Loading stocks...</p>
       ) : (
         <table className="table-auto w-full border-collapse border border-gray-300">
