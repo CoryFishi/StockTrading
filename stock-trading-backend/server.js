@@ -119,7 +119,7 @@ app.get("/api/data", (req, res) => {
 });
 
 // Endpoint to add a new stock
-app.post("/addStock", (req, res) => {
+app.post("/api/addStock", (req, res) => {
   const { ticker, company, price, volume, dayHigh, dayLow, dayStart, dayEnd } =
     req.body;
 
@@ -184,7 +184,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 });
 
 //
-app.delete("/deleteStock/:id", (req, res) => {
+app.delete("/api/deleteStock/:id", (req, res) => {
   const { id } = req.params;
 
   const query = "DELETE FROM stocks WHERE id = ?";
@@ -204,7 +204,7 @@ app.delete("/deleteStock/:id", (req, res) => {
   });
 });
 
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.send("Welcome to the Stock Trading API!");
 });
 

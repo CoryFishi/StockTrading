@@ -37,7 +37,7 @@ export default function App() {
   useEffect(() => {
     const fetchStocks = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/data`);
+        const response = await fetch(`${API_BASE_URL}/api/data`);
         const data = await response.json();
         setStocks(data);
         setLoading(false);
