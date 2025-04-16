@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 const path = require("path");
 const db = require("./config/db");
+const bcrypt = require("bcrypt");
 const app = express();
 const server = http.createServer(app);
 
@@ -162,6 +163,100 @@ app.post("/api/addStock", (req, res) => {
     }
   );
 });
+
+
+// Register user
+app.post("/api/register", async (req, res) => {
+  const { FullName, Username, Password, Email, UserType } = req.body;
+
+  if (!FullName || !Username || !Password || !Email || !UserType) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
+  try {
+    // Check for duplicates
+    const checkQuery = "SELECT * FROM User WHERE Username = ? OR Email = ?";
+    db.query(checkQuery, [Username, Email], async (err, results) => {
+      if (err) {
+        console.error("Error checking user existence:", err);
+        return res.status(500).json({ error: "Server error" });
+      }
+
+      if (results.length > 0) {
+        return res.status(409).json({ error: "Username or email already exists." });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(Password, 10);
+
+      // Insert user
+      const insertQuery = `
+        INSERT INTO User (FullName, Username, Password, Email, UserType, CashBalance)
+        VALUES (?, ?, ?, ?, ?, 10000.00)
+      `;
+      db.query(
+        insertQuery,
+        [FullName, Username, hashedPassword, Email, UserType],
+        (err, result) => {
+          if (err) {
+            console.error("Error inserting user:", err);
+            return res.status(500).json({ error: "Database error" });
+          }
+
+          return res.status(201).json({ message: "User registered successfully!" });
+        }
+      );
+    });
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    res.status(500).json({ error: "Unexpected server error" });
+  }
+});
+
+
+// Login user
+app.post("/api/login", (req, res) => {
+  const { UsernameOrEmail, Password } = req.body;
+
+  if (!UsernameOrEmail || !Password) {
+    return res.status(400).json({ error: "Username/email and password are required." });
+  }
+
+  const query = `
+    SELECT * FROM User
+    WHERE Username = ? OR Email = ?
+  `;
+
+  db.query(query, [UsernameOrEmail, UsernameOrEmail], async (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Database error." });
+    }
+
+    if (results.length === 0) {
+      return res.status(401).json({ error: "Invalid credentials." });
+    }
+
+    const user = results[0];
+
+    // Compare passwords
+    const passwordMatch = await bcrypt.compare(Password, user.Password);
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid credentials." });
+    }
+
+    // Return user info (exclude password in response)
+    const { userID, FullName, Username, Email, UserType, CashBalance } = user;
+    res.json({
+      message: "Login successful",
+      user: { userID, FullName, Username, Email, UserType, CashBalance }
+    });
+  });
+});
+
+
+
+
 /// Added S3 bucket functionality
 app.post("/upload", upload.single("file"), async (req, res) => {
   if (!req.file) {
