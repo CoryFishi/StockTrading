@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { MdExpandLess, MdExpandMore } from "react-icons/md";
+import Logo from "../assets/logo.png";
 
 export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
   const location = useLocation();
@@ -26,14 +27,13 @@ export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
   };
 
   return (
-    <nav
-      className={`w-full fixed top-0 left-0 z-50 px-6 py-3 shadow-md transition-all ${
-        isHome ? "bg-black text-white" : "bg-white dark:bg-zinc-900 text-black dark:text-white"
-      }`}
-    >
+    <nav className="w-full left-0 z-50 px-6 py-3 shadow-md transition-all bg-white dark:bg-zinc-900 text-black dark:text-white">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
-        <div className="text-2xl font-semibold">HedgeEdge</div>
+        <div className="text-2xl font-semibold flex items-center space-x-2">
+          <img src={Logo} alt="Hedge Edge logo" className="h-9 w-auto mr-2" />
+          HedgeEdge
+        </div>
 
         {/* Navigation Links + User Actions */}
         <div className="flex items-center space-x-4 text-sm font-medium">
@@ -41,22 +41,22 @@ export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
             <>
               <Link
                 to="/"
-                className={`hover:underline ${
+                className={`hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg py-2 px-3 ${
                   location.pathname === "/" ? "text-orchid" : ""
                 }`}
               >
                 Home
               </Link>
               {user && (
-  <Link
-    to="/dashboard"
-    className={`hover:underline ${
-      location.pathname === "/dashboard" ? "text-orchid" : ""
-    }`}
-  >
-    Trading
-  </Link>
-)}
+                <Link
+                  to="/dashboard"
+                  className={`hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg py-2 px-3 ${
+                    location.pathname === "/dashboard" ? "text-orchid" : ""
+                  }`}
+                >
+                  Trading
+                </Link>
+              )}
               {user.UserType === "Admin" && (
                 <Link
                   to="/admin"
@@ -82,7 +82,7 @@ export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-zinc-800 border rounded shadow-md z-50">
+                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-zinc-800 border dark:border-zinc-600 rounded shadow-md z-50">
                   <button
                     onClick={toggleDarkMode}
                     className="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700"

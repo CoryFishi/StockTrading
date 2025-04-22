@@ -77,7 +77,7 @@ export default function HomeComp({ isRegister, setIsRegister }) {
   };
 
   return (
-    <section className="min-h-screen pt-24 flex flex-col items-center justify-center text-center bg-gradient-to-r from-orchid via-periwinkle to-indigoGlow text-white px-4">
+    <section className="h-full flex flex-col items-center justify-center text-center bg-gradient-to-r from-orchid via-periwinkle to-indigoGlow text-white px-4">
       <h2 className="text-4xl font-bold mb-4">Trade Smarter. Invest Better.</h2>
       <p className="text-lg mb-6">
         Real-time data. Custom portfolios. Simplified trading.
@@ -134,13 +134,31 @@ export default function HomeComp({ isRegister, setIsRegister }) {
 
           {isRegister && (
             <div className="text-sm text-left space-y-1 mt-2">
-              <p className={`${formData.Password.length >= 8 ? "text-green-600" : "text-zinc-500"}`}>
+              <p
+                className={`${
+                  formData.Password.length >= 8
+                    ? "text-green-600"
+                    : "text-zinc-500"
+                }`}
+              >
                 ✅ Minimum 8 characters
               </p>
-              <p className={`${/\d/.test(formData.Password) ? "text-green-600" : "text-zinc-500"}`}>
+              <p
+                className={`${
+                  /\d/.test(formData.Password)
+                    ? "text-green-600"
+                    : "text-zinc-500"
+                }`}
+              >
                 ✅ At least one number
               </p>
-              <p className={`${/[@$!%*?&]/.test(formData.Password) ? "text-green-600" : "text-zinc-500"}`}>
+              <p
+                className={`${
+                  /[@$!%*?&]/.test(formData.Password)
+                    ? "text-green-600"
+                    : "text-zinc-500"
+                }`}
+              >
                 ✅ At least one special character (@$!%*?&)
               </p>
             </div>
@@ -154,20 +172,28 @@ export default function HomeComp({ isRegister, setIsRegister }) {
           </button>
         </form>
 
-        {message && <p className="text-center text-sm mt-2 text-red-600">{message}</p>}
+        {message && (
+          <p className="text-center text-sm mt-2 text-red-600">{message}</p>
+        )}
 
         <p className="text-sm text-center">
           {isRegister ? (
             <>
               Already have an account?{" "}
-              <button onClick={toggleForm} className="text-indigoGlow hover:underline">
+              <button
+                onClick={toggleForm}
+                className="text-indigoGlow hover:underline"
+              >
                 Login
               </button>
             </>
           ) : (
             <>
               Don’t have an account?{" "}
-              <button onClick={toggleForm} className="text-indigoGlow hover:underline">
+              <button
+                onClick={toggleForm}
+                className="text-indigoGlow hover:underline"
+              >
                 Sign up
               </button>
             </>
