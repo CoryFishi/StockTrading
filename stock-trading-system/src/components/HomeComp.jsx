@@ -52,7 +52,29 @@ const HomeComp = () => {
         throw new Error(data.error || "Something went wrong.");
       }
 
-      setMessage(data.message || "Success!");
+      // Auto-login after registration
+      if (isRegister) {
+        const loginRes = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            UsernameOrEmail: formData.Username,
+            Password: formData.Password,
+          }),
+        });
+
+        const loginData = await loginRes.json();
+
+        if (!loginRes.ok) {
+          throw new Error(loginData.error || "Login failed after registration.");
+        }
+
+        localStorage.setItem("user", JSON.stringify(loginData.user));
+        window.location.href = "/dashboard";
+      } else if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+        window.location.href = "/dashboard";
+      }
     } catch (err) {
       setMessage(err.message);
     }
@@ -60,7 +82,6 @@ const HomeComp = () => {
 
   return (
     <div className="flex flex-col bg-zinc-100 dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100">
-      {/* Section 1 - Hero + Auth */}
       <section className="h-screen flex flex-col items-center justify-center text-center bg-gradient-to-r from-blue-500 to-purple-600 text-white relative px-4">
         <h2 className="text-4xl font-bold mb-4">
           Trade Smarter. Invest Better.
@@ -129,7 +150,7 @@ const HomeComp = () => {
                       : "text-zinc-500"
                   }`}
                 >
-                  ✅ Minimum 8 characters
+                  Minimum 8 characters
                 </p>
                 <p
                   className={`${
@@ -138,7 +159,7 @@ const HomeComp = () => {
                       : "text-zinc-500"
                   }`}
                 >
-                  ✅ At least one number
+                  At least one number
                 </p>
                 <p
                   className={`${
@@ -147,7 +168,7 @@ const HomeComp = () => {
                       : "text-zinc-500"
                   }`}
                 >
-                  ✅ At least one special character (@$!%*?&)
+                  At least one special character (@$!%*?&)
                 </p>
               </div>
             )}
@@ -162,7 +183,6 @@ const HomeComp = () => {
 
           {message && <p className="text-center text-sm mt-2">{message}</p>}
 
-          {/* Toggle link */}
           <p className="text-sm text-center">
             {isRegister ? (
               <>
@@ -187,9 +207,10 @@ const HomeComp = () => {
             )}
           </p>
         </div>
+
+ 
       </section>
 
-      {/* Other sections stay the same */}
       <section className="h-screen flex flex-col items-center justify-center text-center bg-white dark:bg-zinc-800">
         <h2 className="text-3xl font-bold mb-4">Features</h2>
         <ul className="space-y-3 text-lg">
