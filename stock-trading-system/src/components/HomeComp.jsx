@@ -82,7 +82,6 @@ export default function HomeComp({ isRegister, setIsRegister }) {
       <p className="text-lg mb-6">
         Real-time data. Custom portfolios. Simplified trading.
       </p>
-
       <div className="bg-white text-zinc-900 rounded-xl shadow-lg p-6 w-full max-w-md space-y-4">
         <h3 className="text-2xl font-bold text-center">
           {isRegister ? "Create Account" : "Login"}

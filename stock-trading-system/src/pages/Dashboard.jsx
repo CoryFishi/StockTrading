@@ -11,7 +11,7 @@ export default function Dashboard({
   loading,
 }) {
   return (
-    <div className="h-screen flex flex-col bg-gray-100 dark:bg-zinc-900">
+    <div className="h-screen flex flex-col bg-gradient-to-r from-orchid via-periwinkle to-indigoGlow">
       {/* Navbar */}
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
 
