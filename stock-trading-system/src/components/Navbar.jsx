@@ -13,7 +13,7 @@ export default function Navbar({ darkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const userRef = useRef(null);
   const [dashboardMenu, setDashboardMenu] = useState(false);
-
+  const user = JSON.parse(localStorage.getItem("user"));
   const handleLogout = async () => {
     alert("Logout clicked");
   };
