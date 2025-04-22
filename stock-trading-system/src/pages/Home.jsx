@@ -1,7 +1,5 @@
-import AddStockForm from "../components/AddStockForm";
 import HomeComp from "../components/HomeComp";
 import Navbar from "../components/Navbar";
-import StockTicker from "../components/StockTicker";
 
 export default function Home({ darkMode, toggleDarkMode }) {
   return (
