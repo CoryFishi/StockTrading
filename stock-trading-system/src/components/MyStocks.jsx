@@ -1,31 +1,49 @@
 import { useState, useEffect } from "react";
+import PaginationFooter from "./PaginationFooter";
 
 const MyStocks = ({ stocks }) => {
   // Declarations and initial state
   // fake user stocks data for testing
   // In a real application, this data would come from an API or database
   const [myStocks, setMyStocks] = useState([
-    { ticker: "AAPL", company: "Apple", shares: 10, purchasePrice: 140 },
-    { ticker: "BBL", company: "Jesus", shares: 10, purchasePrice: 120 },
-    { ticker: "MSFT", company: "Microsoft", shares: 15, purchasePrice: 280 },
-    { ticker: "GOOGL", company: "Alphabet", shares: 8, purchasePrice: 2500 },
-    { ticker: "AMZN", company: "Amazon", shares: 5, purchasePrice: 3300 },
-    { ticker: "TSLA", company: "Tesla", shares: 12, purchasePrice: 700 },
-    { ticker: "NFLX", company: "Netflix", shares: 7, purchasePrice: 500 },
-    { ticker: "NVDA", company: "NVIDIA", shares: 10, purchasePrice: 220 },
-    { ticker: "META", company: "Meta", shares: 9, purchasePrice: 330 },
-    { ticker: "BABA", company: "Alibaba", shares: 14, purchasePrice: 180 },
-    { ticker: "INTC", company: "Intel", shares: 20, purchasePrice: 60 },
-    { ticker: "AMD", company: "AMD", shares: 16, purchasePrice: 90 },
-    { ticker: "ORCL", company: "Oracle", shares: 13, purchasePrice: 85 },
-    { ticker: "CSCO", company: "Cisco", shares: 18, purchasePrice: 55 },
-    { ticker: "ADBE", company: "Adobe", shares: 6, purchasePrice: 480 },
-    { ticker: "CRM", company: "Salesforce", shares: 11, purchasePrice: 210 },
-    { ticker: "SHOP", company: "Shopify", shares: 7, purchasePrice: 1450 },
-    { ticker: "UBER", company: "Uber", shares: 25, purchasePrice: 45 },
-    { ticker: "LYFT", company: "Lyft", shares: 30, purchasePrice: 50 },
-    { ticker: "SQ", company: "Block", shares: 10, purchasePrice: 240 },
+    { Ticker: "AAPL", CompanyName: "Apple", shares: 10, purchasePrice: 140 },
+    { Ticker: "BBL", CompanyName: "Jesus", shares: 10, purchasePrice: 120 },
+    {
+      Ticker: "MSFT",
+      CompanyName: "Microsoft",
+      shares: 15,
+      purchasePrice: 280,
+    },
+    {
+      Ticker: "GOOGL",
+      CompanyName: "Alphabet",
+      shares: 8,
+      purchasePrice: 2500,
+    },
+    { Ticker: "AMZN", CompanyName: "Amazon", shares: 5, purchasePrice: 3300 },
+    { Ticker: "TSLA", CompanyName: "Tesla", shares: 12, purchasePrice: 700 },
+    { Ticker: "NFLX", CompanyName: "Netflix", shares: 7, purchasePrice: 500 },
+    { Ticker: "NVDA", CompanyName: "NVIDIA", shares: 10, purchasePrice: 220 },
+    { Ticker: "META", CompanyName: "Meta", shares: 9, purchasePrice: 330 },
+    { Ticker: "BABA", CompanyName: "Alibaba", shares: 14, purchasePrice: 180 },
+    { Ticker: "INTC", CompanyName: "Intel", shares: 20, purchasePrice: 60 },
+    { Ticker: "AMD", CompanyName: "AMD", shares: 16, purchasePrice: 90 },
+    { Ticker: "ORCL", CompanyName: "Oracle", shares: 13, purchasePrice: 85 },
+    { Ticker: "CSCO", CompanyName: "Cisco", shares: 18, purchasePrice: 55 },
+    { Ticker: "ADBE", CompanyName: "Adobe", shares: 6, purchasePrice: 480 },
+    {
+      Ticker: "CRM",
+      CompanyName: "Salesforce",
+      shares: 11,
+      purchasePrice: 210,
+    },
+    { Ticker: "SHOP", CompanyName: "Shopify", shares: 7, purchasePrice: 1450 },
+    { Ticker: "UBER", CompanyName: "Uber", shares: 25, purchasePrice: 45 },
+    { Ticker: "LYFT", CompanyName: "Lyft", shares: 30, purchasePrice: 50 },
+    { Ticker: "SQ", CompanyName: "Block", shares: 10, purchasePrice: 240 },
   ]);
+  const [filteredStocks, setFilteredStocks] = useState(myStocks);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // pagination and sorting logic
   const [currentPrices, setCurrentPrices] = useState({});
@@ -35,36 +53,65 @@ const MyStocks = ({ stocks }) => {
   });
   const [totalCurrentValue, setTotalCurrentValue] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortAscending, setSortAscending] = useState(true);
-  const stocksPerPage = 5;
-  const indexOfLastStock = currentPage * stocksPerPage;
-  const indexOfFirstStock = indexOfLastStock - stocksPerPage;
-  const sortedStocks = myStocks
+  const [sortConfig, setSortConfig] = useState({
+    key: "gainLossPercentage",
+    direction: "asc",
+  });
+  const [stocksPerPage, setStocksPerPage] = useState(5);
+  const filtered = myStocks.filter(
+    (stock) =>
+      stock.Ticker.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stock.CompanyName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  const sortedStocks = filtered
     .map((stock) => {
       const currentPrice =
-        parseFloat(currentPrices[stock.ticker]) || stock.purchasePrice;
+        parseFloat(currentPrices[stock.Ticker]) || stock.purchasePrice;
       const gainLossPercentage =
         ((currentPrice - stock.purchasePrice) / stock.purchasePrice) * 100;
-
-      return { ...stock, currentPrice, gainLossPercentage };
+      console.log(
+        `Ticker: ${stock.Ticker}, Current Price: ${currentPrice}, Gain/Loss Percentage: ${gainLossPercentage}`
+      );
+      return {
+        ...stock,
+        currentPrice: Number(currentPrice.toFixed(2)),
+        gainLossPercentage: Number(gainLossPercentage.toFixed(2)),
+      };
     })
-    .sort((a, b) =>
-      sortAscending
-        ? b.gainLossPercentage - a.gainLossPercentage
-        : a.gainLossPercentage - b.gainLossPercentage
-    );
-  const currentStocks = sortedStocks.slice(indexOfFirstStock, indexOfLastStock);
-  const totalPages = Math.ceil(myStocks.length / stocksPerPage);
+    .sort((a, b) => {
+      const { key, direction } = sortConfig;
+      const valA = a[key];
+      const valB = b[key];
+
+      if (typeof valA === "string") {
+        return direction === "asc"
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      } else {
+        return direction === "asc" ? valA - valB : valB - valA;
+      }
+    });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
+      }
+      return { key, direction: "asc" };
+    });
+  };
 
   // Effect to update current prices based on the stocks prop
   // This effect runs whenever the stocks prop changes
   useEffect(() => {
     const pricesMap = stocks.reduce((acc, stock) => {
-      acc[stock.Ticker] = stock.CurrentPrice || 0; // Use 0 if CurrentPrice is undefined
+      acc[stock.Ticker] = parseFloat(stock.CurrentPrice) || 0;
       return acc;
     }, {});
     setCurrentPrices(pricesMap);
-    console.log(pricesMap);
   }, [stocks]);
 
   // Effect to calculate total gain/loss and current value
@@ -76,7 +123,7 @@ const MyStocks = ({ stocks }) => {
 
       myStocks.forEach((stock) => {
         const currentPrice =
-          parseFloat(currentPrices[stock.ticker]) || stock.purchasePrice;
+          parseFloat(currentPrices[stock.Ticker]) || stock.purchasePrice;
         totalPurchaseValue += stock.purchasePrice * stock.shares;
         totalCurrentValue += currentPrice * stock.shares;
       });
@@ -98,9 +145,19 @@ const MyStocks = ({ stocks }) => {
     <div className="w-full mx-auto bg-white dark:bg-zinc-800 rounded-lg p-1 dark:text-white">
       <div className="flex justify-between items-center mb-2">
         {/* Header */}
-        <h2 className="ml-5 text-2xl font-bold text-zinc-800 dark:text-zinc-100">
-          My Stocks
-        </h2>
+        <div className="flex items-center space-x-7">
+          <h2 className="ml-5 text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+            My Stocks
+          </h2>
+          <input
+            className="w-96 px-2 py-1 rounded border text-black"
+            type="text"
+            placeholder="Search stocks..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
         {/* Total Gain/Loss and Current Value */}
         <div>
           <p
@@ -118,69 +175,97 @@ const MyStocks = ({ stocks }) => {
         </div>
       </div>
       {/* Table for displaying stocks */}
-      <table className="table-auto w-full border-collapse border border-zinc-300 dark:border-zinc-700">
-        <thead>
+      <table className="table-auto w-full border-collapse border border-zinc-300 dark:border-zinc-700 mb-5">
+        <thead className="select-none cursor-pointer">
           <tr className="bg-zinc-200 dark:bg-zinc-700">
-            <th className="px-4 py-2"> Ticker</th>
-            <th className="px-4 py-2"> Company</th>
-            <th className="px-4 py-2"> Shares</th>
-            <th className="px-4 py-2"> Current Price</th>
             <th
-              onClick={() => setSortAscending(!sortAscending)}
-              className="px-4 py-2"
+              onClick={() => handleSort("Ticker")}
+              className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
             >
-              {sortAscending ? "↓" : "↑"} Gain/Loss (%)
+              {sortConfig.key === "Ticker" &&
+                (sortConfig.direction === "asc" ? "↑ " : "↓ ")}
+              Ticker
+            </th>
+            <th
+              onClick={() => handleSort("CompanyName")}
+              className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
+            >
+              {sortConfig.key === "CompanyName" &&
+                (sortConfig.direction === "asc" ? "↑ " : "↓ ")}
+              Company
+            </th>
+            <th
+              onClick={() => handleSort("shares")}
+              className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
+            >
+              {sortConfig.key === "shares" &&
+                (sortConfig.direction === "asc" ? "↑ " : "↓ ")}
+              Shares
+            </th>
+            <th
+              onClick={() => handleSort("currentPrice")}
+              className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
+            >
+              {sortConfig.key === "currentPrice" &&
+                (sortConfig.direction === "asc" ? "↑ " : "↓ ")}
+              Current Price
+            </th>
+            <th
+              onClick={() => handleSort("gainLossPercentage")}
+              className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
+            >
+              {sortConfig.key === "gainLossPercentage" &&
+                (sortConfig.direction === "asc" ? "↑ " : "↓ ")}
+              Gain/Loss (%)
             </th>
           </tr>
         </thead>
         <tbody>
-          {currentStocks.map((stock) => (
-            <tr
-              key={stock.ticker}
-              className="hover:bg-blue-50 dark:hover:bg-zinc-600 dark:text-zinc-100 text-center"
-            >
-              <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-700">
-                {stock.ticker}
-              </td>
-              <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-700">
-                {stock.company}
-              </td>
-              <td className="px-4 py-2  border border-zinc-300 dark:border-zinc-700">
-                {stock.shares}
-              </td>
-              <td className="px-4 py-2  border border-zinc-300 dark:border-zinc-700">
-                ${stock.currentPrice.toFixed(2)}
-              </td>
-              <td
-                className={`px-4 py-2  font-bold border border-zinc-300 dark:border-zinc-700 ${
-                  stock.gainLossPercentage > 0
-                    ? "text-green-500"
-                    : "text-red-500"
-                }`}
+          {sortedStocks
+            .slice(
+              (currentPage - 1) * stocksPerPage,
+              currentPage * stocksPerPage
+            )
+            .map((stock, index) => (
+              <tr
+                key={index}
+                className="hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-zinc-900 dark:text-zinc-100 text-center cursor-pointer"
+                onClick={() => console.log("Open stock details")}
               >
-                {stock.gainLossPercentage.toFixed(2)}%
-              </td>
-            </tr>
-          ))}
+                <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
+                  {stock.Ticker}
+                </td>
+                <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
+                  {stock.CompanyName}
+                </td>
+                <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
+                  {stock.shares}
+                </td>
+                <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
+                  ${stock.currentPrice.toFixed(2)}
+                </td>
+                <td
+                  className={`px-4 py-2 font-bold border border-zinc-300 dark:border-zinc-600 ${
+                    stock.gainLossPercentage > -0.00001
+                      ? "text-green-500"
+                      : "text-red-500"
+                  }`}
+                >
+                  {stock.gainLossPercentage.toFixed(2) + "%"}
+                </td>
+              </tr>
+            ))}
         </tbody>
       </table>
       {/* Pagination */}
       {/* Only show pagination if there are more stocks than can fit on one page */}
-      <div className="flex justify-center items-center mt-4 space-x-2">
-        {Array.from({ length: totalPages }, (_, i) => (
-          <button
-            key={i + 1}
-            onClick={() => setCurrentPage(i + 1)}
-            className={`px-4 py-2 rounded ${
-              currentPage === i + 1
-                ? "bg-blue-500 text-white"
-                : "bg-zinc-200 text-black hover:bg-blue-100"
-            }`}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
+      <PaginationFooter
+        rowsPerPage={stocksPerPage}
+        setRowsPerPage={setStocksPerPage}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        items={sortedStocks}
+      />
     </div>
   );
 };

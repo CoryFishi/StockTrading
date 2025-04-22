@@ -100,7 +100,8 @@ const StockTicker = ({ stocks, loading }) => {
             ))}
           </div>
 
-          {selectedStock && (
+          {/* Removing to move to a modal on click */}
+          {/* {selectedStock && (
             <div className="mt-8">
               {(() => {
                 const selectedTicker =
@@ -118,7 +119,7 @@ const StockTicker = ({ stocks, loading }) => {
                 );
               })()}
             </div>
-          )}
+          )} */}
         </>
       )}
     </div>
