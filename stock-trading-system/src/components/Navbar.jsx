@@ -1,124 +1,103 @@
-import { Link } from "react-router-dom";
-import { RiMenuFold3Fill, RiMenuFold4Fill } from "react-icons/ri";
+import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { MdExpandLess, MdExpandMore } from "react-icons/md";
-import { useNavigate } from "react-router-dom";
 
-export default function Navbar({ darkMode, toggleDarkMode }) {
-  // Toggle dark mode and save preference to localStorage
-  const toggleSideMenu = () => {
-    setDashboardMenu((prev) => !prev);
-  };
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const navigate = useNavigate();
-  const userRef = useRef(null);
-  const [dashboardMenu, setDashboardMenu] = useState(false);
+export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
+  const location = useLocation();
+  const isHome = location.pathname === "/";
   const user = JSON.parse(localStorage.getItem("user"));
-  const handleLogout = async () => {
-    alert("Logout clicked");
-  };
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const userRef = useRef(null);
 
-  const showSideToggle =
-    location.pathname === "/dashboard" || location.pathname === "/admin";
-
-  // Close modal if clicking outside of it
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userRef.current && !userRef.current.contains(event.target)) {
-        setIsDropdownOpen(false); // Close the modal
+        setIsDropdownOpen(false);
       }
     };
-
-    // Add event listener
     document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    // Cleanup event listener
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isDropdownOpen]);
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  };
 
   return (
-    <nav className="bg-white dark:bg-zinc-800 p-2 w-full border-slate-200 dark:border-gray-700 border-b select-none relative">
-      <div className="flex items-center justify-between text-black dark:text-white relative">
-        <div className="flex">
-          {showSideToggle && (
-            <button
-              onClick={toggleSideMenu}
-              className="flex items-center flex-shrink-0 p-2"
-            >
-              {(dashboardMenu === true && (
-                <RiMenuFold3Fill className="text-2xl ml-1 hover:cursor-pointer" />
-              )) || (
-                <RiMenuFold4Fill className="text-2xl ml-1 hover:cursor-pointer" />
-              )}
-            </button>
-          )}
-        </div>
-        <div className="absolute left-1/2 transform -translate-x-1/2 text-2xl font-medium">
-          HedgeEdge
-        </div>
-        <div className="flex space-x-4 items-center mr-5">
-          <Link
-            to="/"
-            className={`hover:bg-slate-100 dark:hover:bg-gray-700 px-3 py-2 text-md font-medium ${
-              location.pathname === "/" ? "border-b-2 border-blue-400" : ""
-            }`}
-          >
-            Home
-          </Link>
-          <Link
-            to="/dashboard"
-            className={`hover:bg-slate-100 dark:hover:bg-gray-700 px-3 py-2 text-md font-medium ${
-              location.pathname === "/dashboard"
-                ? "border-b-2 border-blue-400"
-                : ""
-            }`}
-          >
-            Trading
-          </Link>
+    <nav
+      className={`w-full fixed top-0 left-0 z-50 px-6 py-3 shadow-md transition-all ${
+        isHome ? "bg-black text-white" : "bg-white dark:bg-zinc-900 text-black dark:text-white"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto flex items-center justify-between">
+        {/* Logo */}
+        <div className="text-2xl font-semibold">HedgeEdge</div>
 
-          <Link
-            to="/admin"
-            className={`hover:bg-slate-100 dark:hover:bg-gray-700 px-3 py-2 text-md font-medium ${
-              location.pathname === "/admin" ? "border-b-2 border-blue-400" : ""
-            }`}
-          >
-            Admin
-          </Link>
-
-          {true ? (
-            <div className="relative" ref={userRef}>
-              <h2
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`cursor-pointer bg-gray-100 dark:bg-zinc-600 rounded-md p-2 px-4 flex items-center text-center ${
-                  location.pathname === "/account"
-                    ? "border-b-2 border-blue-400"
-                    : ""
+        {/* Navigation Links + User Actions */}
+        <div className="flex items-center space-x-4 text-sm font-medium">
+          {user && (
+            <>
+              <Link
+                to="/"
+                className={`hover:underline ${
+                  location.pathname === "/" ? "text-orchid" : ""
                 }`}
               >
-                email@gmail.com{" "}
+                Home
+              </Link>
+              {user && (
+  <Link
+    to="/dashboard"
+    className={`hover:underline ${
+      location.pathname === "/dashboard" ? "text-orchid" : ""
+    }`}
+  >
+    Trading
+  </Link>
+)}
+              {user.UserType === "Admin" && (
+                <Link
+                  to="/admin"
+                  className={`hover:underline ${
+                    location.pathname === "/admin" ? "text-orchid" : ""
+                  }`}
+                >
+                  Admin
+                </Link>
+              )}
+            </>
+          )}
+
+          {/* Right side buttons */}
+          {user ? (
+            <div className="relative" ref={userRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="bg-zinc-100 dark:bg-zinc-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+              >
+                {user.Email}
                 {isDropdownOpen ? <MdExpandLess /> : <MdExpandMore />}
-              </h2>
+              </button>
+
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-1 w-full bg-white dark:bg-slate-500 border border-gray-200 dark:border-slate-400 rounded-lg shadow-lg p-2 z-20 flex flex-col">
+                <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-zinc-800 border rounded shadow-md z-50">
                   <button
-                    className="hover:bg-slate-100 dark:hover:bg-gray-700 px-3 py-2 text-md font-medium text-center"
-                    onClick={() =>
-                      toggleDarkMode() & setIsDropdownOpen(!isDropdownOpen)
-                    }
+                    onClick={toggleDarkMode}
+                    className="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700"
                   >
                     {darkMode ? "Light Mode" : "Dark Mode"}
                   </button>
                   <Link
                     to="/account"
-                    className="hover:bg-slate-100 dark:hover:bg-gray-700 px-3 py-2 text-md font-medium text-center border-t border-t-gray-100 dark:border-t-border"
+                    className="block px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700"
                   >
                     Account
                   </Link>
                   <button
-                    className="hover:bg-slate-100 dark:hover:bg-gray-700 px-3 py-2 text-md font-medium border-opacity-50 border-t border-t-gray-100 dark:border-t-border"
-                    onClick={() => handleLogout()}
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2 text-red-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"
                   >
                     Logout
                   </button>
@@ -126,14 +105,22 @@ export default function Navbar({ darkMode, toggleDarkMode }) {
               )}
             </div>
           ) : (
-            <Link
-              to="/login"
-              className={`hover:bg-slate-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md text-md font-medium ${
-                location.pathname === "/" ? "underline" : ""
-              }`}
-            >
-              Sign In
-            </Link>
+            isHome && (
+              <>
+                <button
+                  onClick={() => setIsRegister(false)}
+                  className="px-4 py-1.5 rounded-full border-2 text-sm font-medium border-orchid text-orchid hover:bg-orchid hover:text-white transition"
+                >
+                  Log in
+                </button>
+                <button
+                  onClick={() => setIsRegister(true)}
+                  className="px-4 py-1.5 rounded-full text-sm font-medium bg-indigoGlow text-white hover:bg-periwinkle transition"
+                >
+                  Sign up
+                </button>
+              </>
+            )
           )}
         </div>
       </div>
