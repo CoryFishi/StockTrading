@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from "react";
 import PaginationFooter from "./PaginationFooter";
 
-const StockTicker = ({ stocks, loading }) => {
+const StockTicker = ({
+  stocks,
+  loading,
+  isStockInfoModalOpen,
+  setIsStockInfoModalOpen,
+  setSelectedStock,
+}) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedStock, setSelectedStock] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const st = stocks;
   const [currentPrices, setCurrentPrices] = useState({});
@@ -224,8 +229,11 @@ const StockTicker = ({ stocks, loading }) => {
                 .map((stock, index) => (
                   <tr
                     key={index}
-                    onClick={() => console.log("Open stock details")}
                     className="hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-zinc-900 dark:text-zinc-100 text-center cursor-pointer"
+                    onClick={() => {
+                      setIsStockInfoModalOpen(true);
+                      setSelectedStock(stock);
+                    }}
                   >
                     <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
                       {stock.Ticker}

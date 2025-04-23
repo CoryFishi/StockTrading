@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import PaginationFooter from "./PaginationFooter";
 
-const MyStocks = ({ stocks }) => {
+const MyStocks = ({
+  stocks,
+  isStockInfoModalOpen,
+  setIsStockInfoModalOpen,
+  setSelectedStock,
+}) => {
   const [user] = useState(() => JSON.parse(localStorage.getItem("user")));
   const [myStocks, setMyStocks] = useState([]);
   const [currentPrices, setCurrentPrices] = useState({});
@@ -65,7 +70,6 @@ const MyStocks = ({ stocks }) => {
     if (myStocks.length > 0) {
       let totalPurchaseValue = 0;
       let totalValue = 0;
-
       myStocks.forEach((stock) => {
         const currentPrice =
           parseFloat(currentPrices[stock.Ticker]) || stock.purchasePrice;
@@ -228,7 +232,14 @@ const MyStocks = ({ stocks }) => {
                 .map((stock, index) => (
                   <tr
                     key={index}
-                    className="hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-zinc-900 dark:text-zinc-100 text-center"
+                    className="hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-zinc-900 dark:text-zinc-100 text-center cursor-pointer"
+                    onClick={() => {
+                      setIsStockInfoModalOpen(true);
+                      const fullStock = stocks.find(
+                        (s) => s.Ticker === stock.Ticker
+                      );
+                      setSelectedStock(fullStock || stock);
+                    }}
                   >
                     <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
                       {stock.Ticker}
