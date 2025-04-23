@@ -280,6 +280,9 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+
+
+
 //
 app.delete("/api/deleteStock/:id", (req, res) => {
   const { id } = req.params;
@@ -298,6 +301,36 @@ app.delete("/api/deleteStock/:id", (req, res) => {
     res
       .status(200)
       .json({ message: `Stock with id ${id} deleted successfully` });
+  });
+});
+
+
+
+
+// Get portfolio for a user
+app.get("/api/portfolio/:userID", (req, res) => {
+  const userID = req.params.userID;
+
+  const query = `
+    SELECT 
+      p.PortfolioID,
+      p.StockID,
+      s.Ticker,
+      s.CompanyName,
+      p.Quantity,
+      p.AveragePrice
+    FROM Portfolio p
+    JOIN stocks s ON p.StockID = s.id
+    WHERE p.UserID = ?
+  `;
+
+  db.query(query, [userID], (err, results) => {
+    if (err) {
+      console.error("Error fetching portfolio:", err);
+      return res.status(500).json({ error: "Failed to fetch portfolio" });
+    }
+
+    res.json(results);
   });
 });
 
