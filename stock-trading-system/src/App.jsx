@@ -64,19 +64,19 @@ export default function App() {
         path="/"
         element={<Home darkMode={darkMode} toggleDarkMode={toggleDarkMode} />}
       />
-<Route
-  path="/dashboard"
-  element={
-    <ProtectedRoute allowedRoles={["Customer", "Admin"]}>
-      <Dashboard
-        darkMode={darkMode}
-        toggleDarkMode={toggleDarkMode}
-        stocks={stocks}
-        loading={loading}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={["Customer", "Admin"]}>
+            <Dashboard
+              darkMode={darkMode}
+              toggleDarkMode={toggleDarkMode}
+              stocks={stocks}
+              loading={loading}
+            />
+          </ProtectedRoute>
+        }
       />
-    </ProtectedRoute>
-  }
-/>
       <Route
         path="/admin"
         element={
