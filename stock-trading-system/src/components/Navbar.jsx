@@ -86,7 +86,7 @@ export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
               {user.UserType === "Admin" && (
                 <Link
                   to="/admin"
-                  className={`hover:underline ${
+                  className={`hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg py-2 px-3 ${
                     location.pathname === "/admin" ? "text-orchid" : ""
                   }`}
                 >

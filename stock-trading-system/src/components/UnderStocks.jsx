@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { BiChevronRight } from "react-icons/bi";
 
-const UnderStocks = ({ stocks, loading, setOpenPerformingPage }) => {
+const UnderStocks = ({
+  stocks,
+  loading,
+  setOpenPerformingPage,
+  isStockInfoModalOpen,
+  setIsStockInfoModalOpen,
+  setSelectedStock,
+}) => {
   const [bottomStocks, setBottomStocks] = useState([]);
   const [bottomFiveUnsorted, setBottomFiveUnsorted] = useState([]);
   const [sortConfig, setSortConfig] = useState({
@@ -131,7 +138,10 @@ const UnderStocks = ({ stocks, loading, setOpenPerformingPage }) => {
               <tr
                 key={stock.id}
                 className="hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-zinc-900 dark:text-zinc-100 text-center cursor-pointer"
-                onClick={() => console.log("Open stock details")}
+                onClick={() => {
+                  setIsStockInfoModalOpen(true);
+                  setSelectedStock(stock);
+                }}
               >
                 <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
                   {stock.ticker}
