@@ -33,7 +33,6 @@ const StockTicker = ({ stocks, loading }) => {
 
   // Calculate total gain/loss and current value
   useEffect(() => {
-    console.log(st);
     if (stocks.length > 0) {
       let totalDayStartValue = 0;
       let totalValue = 0;
@@ -47,8 +46,6 @@ const StockTicker = ({ stocks, loading }) => {
         totalDayStartValue += dayStart * volume;
         totalValue += currentPrice * volume;
       });
-
-      console.log(totalDayStartValue, totalValue);
 
       const totalGainLossValue = totalValue - totalDayStartValue;
       const totalGainLossPercentage =
