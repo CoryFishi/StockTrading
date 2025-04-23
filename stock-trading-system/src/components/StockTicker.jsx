@@ -65,8 +65,16 @@ const StockTicker = ({ stocks, loading }) => {
   // Filtering and sorting stocks
   const filtered = stocks.filter(
     (stock) =>
-      stock.Ticker.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      stock.CompanyName.toLowerCase().includes(searchTerm.toLowerCase())
+      (stock.Ticker || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (stock.CompanyName || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      String(stock.CurrentPrice || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      String(stock.Volume || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
   );
 
   const sortedStocks = filtered
