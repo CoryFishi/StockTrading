@@ -2,22 +2,31 @@ import { useState, useEffect } from "react";
 import PaginationFooter from "./PaginationFooter";
 
 const MyStocks = ({ stocks }) => {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [user] = useState(() => JSON.parse(localStorage.getItem("user")));
   const [myStocks, setMyStocks] = useState([]);
   const [currentPrices, setCurrentPrices] = useState({});
-  const [totalGainLoss, setTotalGainLoss] = useState({ value: 0, percentage: 0 });
+  const [totalGainLoss, setTotalGainLoss] = useState({
+    value: 0,
+    percentage: 0,
+  });
   const [totalCurrentValue, setTotalCurrentValue] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortConfig, setSortConfig] = useState({ key: "gainLossPercentage", direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({
+    key: "gainLossPercentage",
+    direction: "asc",
+  });
   const [stocksPerPage, setStocksPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch portfolio from backend
   useEffect(() => {
+    if (!user) return;
+
     const fetchPortfolio = async () => {
-      if (!user) return;
       try {
-        const res = await fetch(`/api/portfolio/${user.userID}`);
+        const res = await fetch(
+          `http://3.90.131.54/api/portfolio/${user.userID}`
+        );
         const data = await res.json();
         setMyStocks(
           data.map((entry) => ({
@@ -32,7 +41,14 @@ const MyStocks = ({ stocks }) => {
       }
     };
 
+    // Initial fetch
     fetchPortfolio();
+
+    // Set interval to fetch every 30 seconds
+    const interval = setInterval(fetchPortfolio, 30000);
+
+    // Clear interval on component unmount
+    return () => clearInterval(interval);
   }, [user]);
 
   // Update current prices from prop
@@ -51,15 +67,20 @@ const MyStocks = ({ stocks }) => {
       let totalValue = 0;
 
       myStocks.forEach((stock) => {
-        const currentPrice = parseFloat(currentPrices[stock.Ticker]) || stock.purchasePrice;
+        const currentPrice =
+          parseFloat(currentPrices[stock.Ticker]) || stock.purchasePrice;
         totalPurchaseValue += stock.purchasePrice * stock.shares;
         totalValue += currentPrice * stock.shares;
       });
 
       const totalGainLossValue = totalValue - totalPurchaseValue;
-      const totalGainLossPercentage = (totalGainLossValue / totalPurchaseValue) * 100;
+      const totalGainLossPercentage =
+        (totalGainLossValue / totalPurchaseValue) * 100;
 
-      setTotalGainLoss({ value: totalGainLossValue, percentage: totalGainLossPercentage });
+      setTotalGainLoss({
+        value: totalGainLossValue,
+        percentage: totalGainLossPercentage,
+      });
       setTotalCurrentValue(totalValue);
     }
   }, [myStocks, currentPrices]);
@@ -86,8 +107,10 @@ const MyStocks = ({ stocks }) => {
 
   const sortedStocks = filtered
     .map((stock) => {
-      const currentPrice = parseFloat(currentPrices[stock.Ticker]) || stock.purchasePrice;
-      const gainLossPercentage = ((currentPrice - stock.purchasePrice) / stock.purchasePrice) * 100;
+      const currentPrice =
+        parseFloat(currentPrices[stock.Ticker]) || stock.purchasePrice;
+      const gainLossPercentage =
+        ((currentPrice - stock.purchasePrice) / stock.purchasePrice) * 100;
       return {
         ...stock,
         currentPrice: Number(currentPrice.toFixed(2)),
@@ -100,7 +123,9 @@ const MyStocks = ({ stocks }) => {
       const valB = b[key];
 
       if (typeof valA === "string") {
-        return direction === "asc" ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        return direction === "asc"
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
       } else {
         return direction === "asc" ? valA - valB : valB - valA;
       }
@@ -110,18 +135,27 @@ const MyStocks = ({ stocks }) => {
     <div className="w-full mx-auto bg-white dark:bg-zinc-800 rounded-lg p-1 dark:text-white">
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center space-x-7">
-          <h2 className="ml-5 text-2xl font-bold text-zinc-800 dark:text-zinc-100">My Stocks</h2>
-          <input
-            className="w-96 px-2 py-1 rounded border text-black"
-            type="text"
-            placeholder="Search stocks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <h2 className="ml-5 text-2xl font-bold text-zinc-800 dark:text-zinc-100">
+            My Stocks
+          </h2>
+          {myStocks.length > 0 && (
+            <input
+              className="w-96 px-2 py-1 rounded border text-black"
+              type="text"
+              placeholder="Search stocks..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          )}
         </div>
         <div>
-          <p className={`text-2xl font-bold ${totalGainLoss.value > 0 ? "text-green-500" : "text-red-500"}`}>
-            {totalGainLoss.value > 0 ? "+" : ""}${totalGainLoss.value.toFixed(2)} (
+          <p
+            className={`text-2xl font-bold ${
+              totalGainLoss.value > 0 ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {totalGainLoss.value > 0 ? "+" : ""}$
+            {totalGainLoss.value.toFixed(2)} (
             {totalGainLoss.percentage.toFixed(2)}%)
           </p>
           <p className="text-lg text-zinc-800 dark:text-zinc-100 text-right">
@@ -130,47 +164,91 @@ const MyStocks = ({ stocks }) => {
         </div>
       </div>
 
-      <table className="table-auto w-full border-collapse border border-zinc-300 dark:border-zinc-700 mb-5">
-        <thead className="select-none cursor-pointer">
-          <tr className="bg-zinc-200 dark:bg-zinc-700">
-            <th onClick={() => handleSort("Ticker")} className="hover:bg-zinc-400 dark:hover:bg-zinc-800">Ticker</th>
-            <th onClick={() => handleSort("CompanyName")} className="hover:bg-zinc-400 dark:hover:bg-zinc-800">Company</th>
-            <th onClick={() => handleSort("shares")} className="hover:bg-zinc-400 dark:hover:bg-zinc-800">Shares</th>
-            <th onClick={() => handleSort("currentPrice")} className="hover:bg-zinc-400 dark:hover:bg-zinc-800">Current Price</th>
-            <th onClick={() => handleSort("gainLossPercentage")} className="hover:bg-zinc-400 dark:hover:bg-zinc-800">Gain/Loss (%)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedStocks
-            .slice((currentPage - 1) * stocksPerPage, currentPage * stocksPerPage)
-            .map((stock, index) => (
-              <tr
-                key={index}
-                className="hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-zinc-900 dark:text-zinc-100 text-center"
+      {sortedStocks.length === 0 ? (
+        <p className="text-center text-zinc-600 dark:text-white">
+          No stocks available.
+        </p>
+      ) : (
+        (<table className="table-auto w-full border-collapse border border-zinc-300 dark:border-zinc-700 mb-5">
+          <thead className="select-none cursor-pointer">
+            <tr className="bg-zinc-200 dark:bg-zinc-700">
+              <th
+                onClick={() => handleSort("Ticker")}
+                className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
               >
-                <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">{stock.Ticker}</td>
-                <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">{stock.CompanyName}</td>
-                <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">{stock.shares}</td>
-                <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">${stock.currentPrice.toFixed(2)}</td>
-                <td
-                  className={`px-4 py-2 font-bold border border-zinc-300 dark:border-zinc-600 ${
-                    stock.gainLossPercentage >= 0 ? "text-green-500" : "text-red-500"
-                  }`}
+                Ticker
+              </th>
+              <th
+                onClick={() => handleSort("CompanyName")}
+                className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
+              >
+                Company
+              </th>
+              <th
+                onClick={() => handleSort("shares")}
+                className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
+              >
+                Shares
+              </th>
+              <th
+                onClick={() => handleSort("currentPrice")}
+                className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
+              >
+                Current Price
+              </th>
+              <th
+                onClick={() => handleSort("gainLossPercentage")}
+                className="hover:bg-zinc-400 dark:hover:bg-zinc-800"
+              >
+                Gain/Loss (%)
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedStocks
+              .slice(
+                (currentPage - 1) * stocksPerPage,
+                currentPage * stocksPerPage
+              )
+              .map((stock, index) => (
+                <tr
+                  key={index}
+                  className="hover:bg-blue-50 dark:bg-zinc-800 dark:hover:bg-zinc-900 dark:text-zinc-100 text-center"
                 >
-                  {stock.gainLossPercentage.toFixed(2)}%
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
-
-      <PaginationFooter
-        rowsPerPage={stocksPerPage}
-        setRowsPerPage={setStocksPerPage}
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        items={sortedStocks}
-      />
+                  <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
+                    {stock.Ticker}
+                  </td>
+                  <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
+                    {stock.CompanyName}
+                  </td>
+                  <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
+                    {stock.shares}
+                  </td>
+                  <td className="px-4 py-2 border border-zinc-300 dark:border-zinc-600">
+                    ${stock.currentPrice.toFixed(2)}
+                  </td>
+                  <td
+                    className={`px-4 py-2 font-bold border border-zinc-300 dark:border-zinc-600 ${
+                      stock.gainLossPercentage >= 0
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {stock.gainLossPercentage.toFixed(2)}%
+                  </td>
+                </tr>
+              ))}
+          </tbody>
+        </table>)(
+          <PaginationFooter
+            rowsPerPage={stocksPerPage}
+            setRowsPerPage={setStocksPerPage}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            items={sortedStocks}
+          />
+        )
+      )}
     </div>
   );
 };
