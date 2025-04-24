@@ -1,18 +1,24 @@
 import React, { useRef, useState, useEffect } from "react";
-import { FaPerson } from "react-icons/fa6";
 import PaginationFooter from "../PaginationFooter";
+import AddStockForm from "../AddStockForm";
+import DeleteStock from "../DeleteStock";
+import EditStockModal from "../EditStockModal";
+import MarketScheduleModal from "../MarketScheduleModal";
 
-export default function StocksPage({ s }) {
+export default function StocksPage({ stocks, setStocks }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filteredStocks, setFilteredStocks] = useState([]);
   const [dropdownIndex, setDropdownIndex] = useState(null);
   const modalRef = useRef(null);
   const [isEditStockModalOpen, setIsEditStockModalOpen] = useState(false);
+  const [isCreateStockOpen, setIsCreateStockOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortedColumn, setSortedColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState("asc");
+  const [isDeleteStockOpen, setIsDeleteStockOpen] = useState(false);
+  const [isMarketScheduleOpen, setIsMarketScheduleOpen] = useState(false);
 
   const toggleDropdown = (index) => {
     setDropdownIndex(dropdownIndex === index ? null : index);
@@ -36,7 +42,7 @@ export default function StocksPage({ s }) {
   }, [setDropdownIndex]);
 
   useEffect(() => {
-    const filteredStocks = s.sort((a, b) => {
+    const filteredStocks = stocks.sort((a, b) => {
       if ((a.Ticker || "").toLowerCase() < (b.Ticker || "").toLowerCase())
         return -1;
       if ((a.Ticker || "").toLowerCase() > (b.Ticker || "").toLowerCase())
@@ -45,11 +51,11 @@ export default function StocksPage({ s }) {
     });
     setSortedColumn("Ticker");
     setFilteredStocks(filteredStocks);
-  }, [s]);
+  }, [stocks]);
 
   useEffect(() => {
     // Filter stocks based on the search query
-    const filteredStocks = s.filter(
+    const filteredStocks = stocks.filter(
       (stock) =>
         (stock.id?.toString() || "").includes(searchQuery) ||
         (stock.Ticker?.toLowerCase() || "").includes(searchQuery.toLowerCase())
@@ -59,12 +65,31 @@ export default function StocksPage({ s }) {
 
   return (
     <div className="overflow-auto dark:text-white dark:bg-zinc-900 h-full">
-      <div className="flex h-12 bg-zinc-200 items-center border-b dark:border-b-zinc-700 dark:bg-zinc-900">
-        <div className="ml-5 flex items-center text-sm">
-          <FaPerson className="text-lg" />
-          &ensp; Stocks
-        </div>
-      </div>
+      {isCreateStockOpen && (
+        <AddStockForm
+          setIsCreateStockOpen={setIsCreateStockOpen}
+          setStocks={setStocks}
+        />
+      )}
+      {isDeleteStockOpen && (
+        <DeleteStock
+          setIsDeleteStockOpen={setIsDeleteStockOpen}
+          selectedStock={selectedStock}
+        />
+      )}
+      {isEditStockModalOpen && (
+        <EditStockModal
+          setIsEditStockOpen={setIsEditStockModalOpen}
+          selectedStock={selectedStock}
+        />
+      )}
+      {isMarketScheduleOpen && (
+        <MarketScheduleModal
+          isOpen={isMarketScheduleOpen}
+          onClose={() => setIsMarketScheduleOpen(false)}
+        />
+      )}
+
       <div className="mt-2  flex items-center justify-end text-center px-5 gap-2">
         <input
           type="text"
@@ -73,8 +98,17 @@ export default function StocksPage({ s }) {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="border p-2 w-full dark:bg-zinc-800 rounded-sm dark:border-zinc-600"
         />
-        <button className="p-2 w-32 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition duration-300 ease-in-out">
+        <button
+          className="p-2 w-40  rounded-md bg-blue-500 text-white hover:bg-blue-600 transition duration-300 ease-in-out"
+          onClick={() => setIsCreateStockOpen(true)}
+        >
           Create Stock
+        </button>
+        <button
+          className="p-2 w-56 rounded-md bg-green-500 text-white hover:bg-green-600 transition duration-300 ease-in-out"
+          onClick={() => setIsMarketScheduleOpen(true)}
+        >
+          Edit Market Schedule
         </button>
       </div>
       <div className="w-full px-5 py-2">
@@ -89,7 +123,7 @@ export default function StocksPage({ s }) {
                   setSortDirection(newDirection);
                   setSortedColumn("Ticker");
                   setFilteredStocks(
-                    [...s].sort((a, b) => {
+                    [...stocks].sort((a, b) => {
                       const stockA = (a.Ticker || "").toLowerCase();
                       const stockB = (b.Ticker || "").toLowerCase();
 
@@ -116,7 +150,7 @@ export default function StocksPage({ s }) {
                   setSortDirection(newDirection);
                   setSortedColumn("Company");
                   setFilteredStocks(
-                    [...s].sort((a, b) => {
+                    [...stocks].sort((a, b) => {
                       const stockA = a.CompanyName;
                       const stockB = b.CompanyName;
 
@@ -143,7 +177,7 @@ export default function StocksPage({ s }) {
                   setSortDirection(newDirection);
                   setSortedColumn("Current Price");
                   setFilteredStocks(
-                    [...s].sort((a, b) => {
+                    [...stocks].sort((a, b) => {
                       const stockA = a.CurrentPrice || 0;
                       const stockB = b.CurrentPrice || 0;
 
@@ -170,7 +204,7 @@ export default function StocksPage({ s }) {
                   setSortDirection(newDirection);
                   setSortedColumn("Volume");
                   setFilteredStocks(
-                    [...s].sort((a, b) => {
+                    [...stocks].sort((a, b) => {
                       const stockA = a.Volume || 0;
                       const stockB = b.Volume || 0;
 
@@ -201,10 +235,7 @@ export default function StocksPage({ s }) {
                   key={index}
                   className="hover:bg-zinc-100 dark:hover:bg-zinc-800 text-center"
                 >
-                  <td
-                    className="border-y border-zinc-300 dark:border-zinc-600 px-4 py-2"
-                    onClick={() => console.log(stock)}
-                  >
+                  <td className="border-y border-zinc-300 dark:border-zinc-600 px-4 py-2">
                     {stock.Ticker || "Unknown"}
                   </td>
                   <td className="border-y border-zinc-300 dark:border-zinc-600 px-4 py-2">
@@ -231,14 +262,21 @@ export default function StocksPage({ s }) {
                         <button
                           className="hover:bg-zinc-100 dark:hover:bg-zinc-700 px-5 py-4 text-md font-medium text-left hover:cursor-pointer rounded-t"
                           onClick={() => {
-                            setSelectedStock(stock) &
-                              setIsEditStockModalOpen(true) &
-                              setDropdownIndex(null);
+                            setSelectedStock(stock);
+                            setIsEditStockModalOpen(true);
+                            setDropdownIndex(null);
                           }}
                         >
                           Edit
                         </button>
-                        <button className="hover:bg-zinc-100 dark:hover:bg-zinc-700 px-5 py-4 text-md font-medium text-left hover:cursor-pointer rounded-b">
+                        <button
+                          className="hover:bg-zinc-100 dark:hover:bg-zinc-700 px-5 py-4 text-md font-medium text-left hover:cursor-pointer rounded-b"
+                          onClick={() => {
+                            setIsDeleteStockOpen(true);
+                            setSelectedStock(stock);
+                            setDropdownIndex(null);
+                          }}
+                        >
                           Delete
                         </button>
                       </div>
