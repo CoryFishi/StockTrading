@@ -84,6 +84,7 @@ export default function App() {
             <Admin
               stocks={stocks}
               darkMode={darkMode}
+              setStocks={setStocks}
               toggleDarkMode={toggleDarkMode}
             />
           </ProtectedRoute>

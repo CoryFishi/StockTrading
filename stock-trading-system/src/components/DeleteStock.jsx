@@ -1,67 +1,68 @@
 import React, { useState } from "react";
-import API_BASE_URL from "../config.js";const DeleteStock = () => {
-  const [stockId, setStockId] = useState("");
+
+const DeleteStock = ({
+  setIsDeleteStockOpen,
+  selectedStock,
+  setSelectedStock,
+}) => {
   const [message, setMessage] = useState("");
 
   const handleDelete = async (e) => {
     e.preventDefault();
-    setMessage(""); // Reset message before starting the request
-
-    if (!stockId) {
-      setMessage("Please enter a valid stock ID.");
-      return;
-    }
+    setMessage("");
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/deleteStock/${stockId}`,
-        {
-          method: "DELETE",
-        }
+      const res = await fetch(
+        `http://3.90.131.54/api/deleteStock/${selectedStock.id}`,
+        { method: "DELETE" }
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete stock");
-      }
-
-      const data = await response.json();
-      setMessage(
-        data.message || `Stock with ID ${stockId} deleted successfully.`
-      );
-      setStockId(""); // Clear the input field
-    } catch (error) {
-      console.error("Error deleting stock:", error);
+      if (!res.ok) throw new Error("Failed");
+      const data = await res.json();
+      setIsDeleteStockOpen(false);
+    } catch (err) {
       setMessage("Error: Unable to delete stock. Please try again.");
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto p-4 bg-white shadow-md rounded">
-      <h1 className="text-2xl font-bold text-center mb-4">Delete Stock</h1>
-      <form onSubmit={handleDelete} className="space-y-4">
-        <input
-          type="text"
-          value={stockId}
-          onChange={(e) => setStockId(e.target.value)}
-          placeholder="Enter Stock ID"
-          className="w-full px-4 py-2 border border-gray-300 rounded"
-        />
-        <button
-          type="submit"
-          className="w-full bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
-        >
-          Delete Stock
-        </button>
-      </form>
-      {message && (
-        <p
-          className={`mt-4 text-center ${
-            message.includes("Error") ? "text-red-600" : "text-green-600"
-          }`}
-        >
-          {message}
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+      <div className="w-full max-w-md p-6 bg-white dark:bg-zinc-800 rounded-lg shadow-lg space-y-4">
+        <h1 className="text-2xl font-bold text-center text-black dark:text-white">
+          Delete {selectedStock.CompanyName} ({selectedStock.Ticker})
+        </h1>
+
+        <p className="text-center text-gray-700 dark:text-gray-300">
+          Are you sure you want to delete this stock?
         </p>
-      )}
+
+        <form onSubmit={handleDelete} className="space-y-4">
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              className="w-full bg-zinc-500 text-white py-2 rounded hover:bg-zinc-600"
+              onClick={() => setIsDeleteStockOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600"
+            >
+              Delete Stock
+            </button>
+          </div>
+        </form>
+
+        {message && (
+          <p
+            className={`text-center font-medium ${
+              message.startsWith("Error") ? "text-red-500" : "text-green-500"
+            }`}
+          >
+            {message}
+          </p>
+        )}
+      </div>
     </div>
   );
 };
