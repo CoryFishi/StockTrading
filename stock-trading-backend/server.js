@@ -35,7 +35,6 @@ function sanitizeNumber(value, fallback = 0) {
   return isNaN(num) ? fallback : num;
 }
 
-
 // Function to simulate and price updates
 function updateStockPrices() {
   console.log("Updating stock prices...");
@@ -49,7 +48,9 @@ function updateStockPrices() {
     results.forEach((stock) => {
       const currentPrice = parseFloat(stock.CurrentPrice);
       const now = new Date();
-      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(
+        now.getMinutes()
+      ).padStart(2, "0")}`;
 
       let history = [];
       try {
@@ -68,7 +69,8 @@ function updateStockPrices() {
         `UPDATE stocks SET history = ? WHERE id = ?`,
         [JSON.stringify(history), stock.id],
         (err) => {
-          if (err) console.error(`Error updating history for ${stock.Ticker}:`, err);
+          if (err)
+            console.error(`Error updating history for ${stock.Ticker}:`, err);
         }
       );
     });
@@ -84,7 +86,6 @@ function updateStockPrices() {
     });
   });
 }
-
 
 // WebSocket connection
 io.on("connection", (socket) => {
@@ -128,7 +129,9 @@ app.post("/api/addStock", (req, res) => {
   if (!ticker || !company || !price || !volume) {
     return res
       .status(400)
-      .json({ error: "Ticker, Company, CurrentPrice, and Volume are required" });
+      .json({
+        error: "Ticker, Company, CurrentPrice, and Volume are required",
+      });
   }
 
   const query = `
@@ -141,14 +144,14 @@ app.post("/api/addStock", (req, res) => {
     [
       ticker,
       company,
-      price,               // InitialPrice
-      price,               // CurrentPrice (added this line)
+      price, // InitialPrice
+      price, // CurrentPrice (added this line)
       volume,
       dayHigh || price,
       dayLow || price,
       dayStart || price,
       dayEnd || price,
-      JSON.stringify([]),  // Initialize history as an empty array
+      JSON.stringify([]), // Initialize history as an empty array
     ],
     (err, results) => {
       if (err) {
@@ -158,12 +161,11 @@ app.post("/api/addStock", (req, res) => {
 
       res.status(201).json({
         message: "Stock added successfully",
-        stockId: results.insertId,
+        stock: results,
       });
     }
   );
 });
-
 
 // Register user
 app.post("/api/register", async (req, res) => {
@@ -183,7 +185,9 @@ app.post("/api/register", async (req, res) => {
       }
 
       if (results.length > 0) {
-        return res.status(409).json({ error: "Username or email already exists." });
+        return res
+          .status(409)
+          .json({ error: "Username or email already exists." });
       }
 
       // Hash password
@@ -203,7 +207,9 @@ app.post("/api/register", async (req, res) => {
             return res.status(500).json({ error: "Database error" });
           }
 
-          return res.status(201).json({ message: "User registered successfully!" });
+          return res
+            .status(201)
+            .json({ message: "User registered successfully!" });
         }
       );
     });
@@ -213,13 +219,14 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-
 // Login user
 app.post("/api/login", (req, res) => {
   const { UsernameOrEmail, Password } = req.body;
 
   if (!UsernameOrEmail || !Password) {
-    return res.status(400).json({ error: "Username/email and password are required." });
+    return res
+      .status(400)
+      .json({ error: "Username/email and password are required." });
   }
 
   const query = `
@@ -249,13 +256,10 @@ app.post("/api/login", (req, res) => {
     const { userID, FullName, Username, Email, UserType, CashBalance } = user;
     res.json({
       message: "Login successful",
-      user: { userID, FullName, Username, Email, UserType, CashBalance }
+      user: { userID, FullName, Username, Email, UserType, CashBalance },
     });
   });
 });
-
-
-
 
 /// Added S3 bucket functionality
 app.post("/upload", upload.single("file"), async (req, res) => {
@@ -280,9 +284,6 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-
-
-
 //
 app.delete("/api/deleteStock/:id", (req, res) => {
   const { id } = req.params;
@@ -303,9 +304,6 @@ app.delete("/api/deleteStock/:id", (req, res) => {
       .json({ message: `Stock with id ${id} deleted successfully` });
   });
 });
-
-
-
 
 // Get portfolio for a user
 app.get("/api/portfolio/:userID", (req, res) => {
