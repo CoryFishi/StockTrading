@@ -124,7 +124,7 @@ const StockInfoModal = ({
 
         <button
           onClick={handleClose}
-          className="w-full mt-4 bg-zinc-300 dark:bg-zinc-700 py-2 rounded hover:bg-zinc-400 dark:hover:bg-zinc-600"
+          className="w-full mt-4 bg-zinc-300 dark:bg-zinc-700 py-2 rounded hover:bg-zinc-400 dark:hover:bg-zinc-600 dark:text-white"
         >
           Close
         </button>
