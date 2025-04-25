@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   LineChart,
   Line,
@@ -13,8 +14,34 @@ const StockInfoModal = ({
   setIsStockInfoModalOpen,
   selectedStock,
 }) => {
-  const [shares, setShares] = useState(1);
+  const [sharesInput, setSharesInput] = useState(1);
   const [message, setMessage] = useState("");
+  const [cashBalance, setCashBalance] = useState(0);
+  const [owned, setOwned] = useState(0);
+  const [busy, setBusy] = useState(false);
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  useEffect(() => {
+    const u = JSON.parse(localStorage.getItem("user") || "{}");
+    setCashBalance(parseFloat(u?.CashBalance) || 0);
+  }, [isStockInfoModalOpen]);
+
+  useEffect(() => {
+    if (!isStockInfoModalOpen || !selectedStock || !user.userID) return;
+
+    (async () => {
+      try {
+        const { data } = await axios.get(
+          `http://3.90.131.54/api/portfolio/${user.userID}`
+        );
+        const entry = data.find((p) => p.Ticker === selectedStock.Ticker);
+        setOwned(entry ? entry.Quantity : 0);
+      } catch {
+        setOwned(0);
+      }
+    })();
+  }, [isStockInfoModalOpen, selectedStock, user.userID]);
 
   if (!isStockInfoModalOpen || !selectedStock) return null;
 
@@ -29,18 +56,57 @@ const StockInfoModal = ({
     history = [],
   } = selectedStock;
 
-  const handleBuy = () => {
-    setMessage(`Bought ${shares} share(s) of ${Ticker}`);
+  const persistBalance = (bal) => {
+    const u = { ...user, CashBalance: bal };
+    localStorage.setItem("user", JSON.stringify(u));
+    setCashBalance(parseFloat(bal));
   };
 
-  const handleSell = () => {
-    setMessage(`Sold ${shares} share(s) of ${Ticker}`);
+  const updateOwned = (newQty) => setOwned(newQty);
+
+  const handleBuy = async () => {
+    const cost = sharesInput * parseFloat(CurrentPrice);
+    if (cost > cashBalance) return setMessage("Not enough cash.");
+
+    setBusy(true);
+    try {
+      await axios.post("http://3.90.131.54/api/buy", {
+        userID: user.userID,
+        stockID: selectedStock.id,
+        shares: sharesInput,
+        price: CurrentPrice,
+      });
+      persistBalance((cashBalance - cost).toFixed(2));
+      updateOwned(owned + sharesInput);
+      setMessage(`Bought ${sharesInput} share(s).`);
+    } catch (e) {
+      setMessage("Error: could not buy stock.");
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleClose = () => {
-    setIsStockInfoModalOpen(false);
-    setShares(1);
-    setMessage("");
+  const handleSell = async () => {
+    if (sharesInput > owned)
+      return setMessage(`You only own ${owned} share(s).`);
+
+    setBusy(true);
+    const proceeds = sharesInput * parseFloat(CurrentPrice);
+    try {
+      await axios.post("http://3.90.131.54/api/sell", {
+        userID: user.userID,
+        stockID: selectedStock.id,
+        shares: sharesInput,
+        price: CurrentPrice,
+      });
+      persistBalance((cashBalance + proceeds).toFixed(2));
+      updateOwned(owned - sharesInput);
+      setMessage(`Sold ${sharesInput} share(s).`);
+    } catch {
+      setMessage("Error: could not sell stock.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const gainLoss = (
@@ -50,18 +116,27 @@ const StockInfoModal = ({
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="w-full max-w-lg bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-6 space-y-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-black dark:text-white">
-            {CompanyName} ({Ticker})
-          </h2>
-          <p className="text-lg text-gray-700 dark:text-gray-300">
-            ${parseFloat(CurrentPrice).toFixed(2)} • Volume:{" "}
-            {Volume.toLocaleString()}
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold dark:text-white">
+              {CompanyName} ({Ticker})
+            </h2>
+            <p className="text-gray-700 dark:text-gray-300">
+              ${parseFloat(CurrentPrice).toFixed(2)} • Volume{" "}
+              {Volume.toLocaleString()}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-400">Cash Balance</p>
+            <p className="text-xl font-semibold">${cashBalance.toFixed(2)}</p>
+            <p className="text-sm text-gray-400 mt-1">
+              You own&nbsp;<span className="font-semibold">{owned}</span>
+              &nbsp;share(s)
+            </p>
+          </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-4 text-sm text-black dark:text-white">
-          <div>Day Start: ${dayStart || "N/A"}</div>
+        <div className="grid grid-cols-2 gap-4 text-sm dark:text-white text-black">
+          <div>Day Start: ${dayStart ?? "N/A"}</div>
           <div>Day High: ${dayHigh}</div>
           <div>Day Low: ${dayLow}</div>
           <div>
@@ -72,7 +147,6 @@ const StockInfoModal = ({
             </span>
           </div>
         </div>
-
         {history.length > 0 && (
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
@@ -95,36 +169,35 @@ const StockInfoModal = ({
             </ResponsiveContainer>
           </div>
         )}
-
         <div className="flex items-center space-x-2">
           <input
             type="number"
             min="1"
-            value={shares}
-            onChange={(e) => setShares(Number(e.target.value))}
+            value={sharesInput}
+            onChange={(e) => setSharesInput(Number(e.target.value))}
             className="w-24 p-1 rounded border text-black"
           />
           <button
-            className="flex-1 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+            className="flex-1 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 disabled:opacity-40"
             onClick={handleBuy}
+            disabled={busy}
           >
             Buy
           </button>
           <button
-            className="flex-1 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+            className="flex-1 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 disabled:opacity-40"
             onClick={handleSell}
+            disabled={busy || owned === 0}
           >
             Sell
           </button>
         </div>
-
         {message && (
           <p className="text-center text-sm mt-2 text-blue-500">{message}</p>
         )}
-
         <button
-          onClick={handleClose}
-          className="w-full mt-4 bg-zinc-300 dark:bg-zinc-700 py-2 rounded hover:bg-zinc-400 dark:hover:bg-zinc-600 dark:text-white"
+          onClick={() => setIsStockInfoModalOpen(false)}
+          className="w-full mt-4 bg-zinc-300 dark:bg-zinc-700 py-2 rounded hover:bg-zinc-400 dark:hover:bg-zinc-600"
         >
           Close
         </button>
