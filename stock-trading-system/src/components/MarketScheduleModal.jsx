@@ -2,11 +2,6 @@ import React, { useState, useEffect } from "react";
 import API_BASE_URL from "../config.js";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DEFAULT_SCHEDULE = {
-  openTime: "09:30",
-  closeTime: "16:00",
-  openWeekdays: [1, 2, 3, 4, 5],
-};
 const MARKET_TZ = "America/New_York";
 
 const toZonedDate = (d = new Date(), tz = MARKET_TZ) => {
@@ -28,24 +23,14 @@ const toZonedDate = (d = new Date(), tz = MARKET_TZ) => {
   );
 };
 
-export const isMarketOpen = (schedule, when = new Date()) => {
-  const dz = toZonedDate(when);
-  const isoDate = dz.toISOString().slice(0, 10);
-  const weekday = dz.getUTCDay() || 7;
-  const minutes = dz.getHours() * 60 + dz.getMinutes();
-  const openMin =
-    +schedule.openTime.slice(0, 2) * 60 + +schedule.openTime.slice(3);
-  const closeMin =
-    +schedule.closeTime.slice(0, 2) * 60 + +schedule.closeTime.slice(3);
-
-  const weekend = !schedule.openWeekdays.includes(weekday);
-  const holiday = schedule.holidays.includes(isoDate);
-
-  return !weekend && !holiday && minutes >= openMin && minutes <= closeMin;
-};
-
 const MarketScheduleModal = ({ isOpen, onClose }) => {
-  const [schedule, setSchedule] = useState(DEFAULT_SCHEDULE);
+  const [schedule, setSchedule] = useState({
+    MarketOpen: "09:00:00",
+    MarketClose: "17:00:00",
+    OpenDays: "Mon-Fri",
+    Holidays: "",
+    MarketStatus: 1,
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -55,30 +40,34 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
       setLoading(true);
       try {
         const res = await fetch(`${API_BASE_URL}/api/market-schedule`);
-        const data = res.ok ? await res.json() : DEFAULT_SCHEDULE;
-        setSchedule({ ...DEFAULT_SCHEDULE, ...data });
-      } catch {}
-      setLoading(false);
+        const data = await res.json();
+        setSchedule(data);
+      } catch (err) {
+        console.error("Failed to fetch market schedule:", err);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [isOpen]);
 
-  const toggleWeekday = (d) =>
-    setSchedule((s) =>
-      s.openWeekdays.includes(d)
-        ? { ...s, openWeekdays: s.openWeekdays.filter((x) => x !== d) }
-        : { ...s, openWeekdays: [...s.openWeekdays, d].sort() }
-    );
+  const handleChange = (key, value) => {
+    setSchedule((prev) => ({ ...prev, [key]: value }));
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/market-schedule`, {
+      await fetch(`${API_BASE_URL}/api/market-schedule/1`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(schedule),
       });
-    } catch {}
-    setSaving(false);
+    } catch (err) {
+      console.error("Error saving market schedule:", err);
+    } finally {
+      setSaving(false);
+      onClose();
+    }
   };
 
   return (
@@ -95,60 +84,68 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
         ) : (
           <>
             <div className="grid grid-cols-2 gap-4">
-              {["openTime", "closeTime"].map((key) => (
-                <div key={key} className="flex flex-col cursor-pointer">
-                  <label className="mb-1 text-sm font-medium text-black dark:text-gray-200">
-                    {key === "openTime" ? "Open Time" : "Close Time"}
-                  </label>
-                  <input
-                    type="time"
-                    value={schedule[key]}
-                    onChange={(e) =>
-                      setSchedule({ ...schedule, [key]: e.target.value })
-                    }
-                    className="p-2 border rounded dark:bg-zinc-700 dark:text-white cursor-pointer"
-                  />
-                </div>
-              ))}
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-medium text-black dark:text-gray-200">
-                Trading Days
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {WEEKDAYS.map((lbl, i) => {
-                  const d = i + 1;
-                  const active = schedule.openWeekdays.includes(d);
-                  return (
-                    <button
-                      key={lbl}
-                      type="button"
-                      onClick={() => toggleWeekday(d)}
-                      className={`px-3 py-1 rounded border ${
-                        active
-                          ? "bg-blue-500 text-white border-blue-500"
-                          : "bg-transparent text-black dark:text-gray-300 border-gray-400"
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  );
-                })}
+              <div>
+                <label className="text-sm font-medium">Market Open</label>
+                <input
+                  type="time"
+                  className="w-full p-2 border rounded dark:bg-zinc-700 dark:text-white"
+                  value={schedule.MarketOpen}
+                  onChange={(e) => handleChange("MarketOpen", e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Market Close</label>
+                <input
+                  type="time"
+                  className="w-full p-2 border rounded dark:bg-zinc-700 dark:text-white"
+                  value={schedule.MarketClose}
+                  onChange={(e) => handleChange("MarketClose", e.target.value)}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium">Open Days</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded dark:bg-zinc-700 dark:text-white"
+                  value={schedule.OpenDays}
+                  onChange={(e) => handleChange("OpenDays", e.target.value)}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium">Holidays</label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded dark:bg-zinc-700 dark:text-white"
+                  value={schedule.Holidays}
+                  onChange={(e) => handleChange("Holidays", e.target.value)}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium">Market Status</label>
+                <select
+                  className="w-full p-2 border rounded dark:bg-zinc-700 dark:text-white"
+                  value={schedule.MarketStatus}
+                  onChange={(e) =>
+                    handleChange("MarketStatus", Number(e.target.value))
+                  }
+                >
+                  <option value={1}>Open</option>
+                  <option value={0}>Closed</option>
+                </select>
               </div>
             </div>
-            <div className="flex space-x-3">
+
+            <div className="flex justify-end space-x-3">
               <button
-                type="button"
-                className="w-full bg-zinc-500 text-white py-2 rounded hover:bg-zinc-600"
                 onClick={onClose}
+                className="bg-zinc-500 text-white px-4 py-2 rounded hover:bg-zinc-600"
               >
                 Close
               </button>
               <button
-                type="button"
                 disabled={saving}
-                className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 disabled:opacity-50"
                 onClick={handleSave}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
               >
                 Save
               </button>

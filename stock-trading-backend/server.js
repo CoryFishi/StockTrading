@@ -356,6 +356,64 @@ server.listen(SOCKET_PORT, () => {
 //Frontend
 app.use(express.static(path.join(__dirname, "client")));
 
+
+// GET the current market schedule
+app.get("/api/market-schedule", (req, res) => {
+  db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
+    if (err) {
+      console.error("Error fetching market schedule:", err);
+      return res.status(500).json({ error: "Failed to fetch market schedule" });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: "No market schedule found" });
+    }
+
+    const row = results[0];
+    const schedule = {
+      openTime: row.MarketOpen.slice(0, 5),
+      closeTime: row.MarketClose.slice(0, 5),
+      openWeekdays: row.OpenDays.split(",").map((d) => parseInt(d)),
+      holidays: row.Holidays ? row.Holidays.split(",") : [],
+      status: !!row.MarketStatus
+    };
+
+    res.json(schedule);
+  });
+});
+
+// PUT update market schedule
+app.put("/api/market-schedule/:id", (req, res) => {
+  const { id } = req.params;
+  const { openTime, closeTime, openWeekdays, holidays, status } = req.body;
+
+  const updateQuery = `
+    UPDATE MarketSchedule
+    SET MarketOpen = ?, MarketClose = ?, OpenDays = ?, Holidays = ?, MarketStatus = ?
+    WHERE MarketScheduleID = ?
+  `;
+
+  db.query(
+    updateQuery,
+    [
+      openTime,
+      closeTime,
+      openWeekdays.join(","),
+      (holidays || []).join(","),
+      status ? 1 : 0,
+      id
+    ],
+    (err, result) => {
+      if (err) {
+        console.error("Error updating market schedule:", err);
+        return res.status(500).json({ error: "Failed to update schedule" });
+      }
+
+      res.json({ message: "Market schedule updated successfully" });
+    }
+  );
+});
+
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client", "index.html"));
 });
