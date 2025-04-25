@@ -127,11 +127,9 @@ app.post("/api/addStock", (req, res) => {
     req.body;
 
   if (!ticker || !company || !price || !volume) {
-    return res
-      .status(400)
-      .json({
-        error: "Ticker, Company, CurrentPrice, and Volume are required",
-      });
+    return res.status(400).json({
+      error: "Ticker, Company, CurrentPrice, and Volume are required",
+    });
   }
 
   const query = `
@@ -356,7 +354,6 @@ server.listen(SOCKET_PORT, () => {
 //Frontend
 app.use(express.static(path.join(__dirname, "client")));
 
-
 // GET the current market schedule
 app.get("/api/market-schedule", (req, res) => {
   db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
@@ -374,7 +371,7 @@ app.get("/api/market-schedule", (req, res) => {
       closeTime: row.MarketClose.slice(0, 5),
       openWeekdays: row.OpenDays.split(",").map((d) => parseInt(d)),
       holidays: row.Holidays ? row.Holidays.split(",") : [],
-      status: !!row.MarketStatus
+      status: !!row.MarketStatus,
     };
 
     res.json(schedule);
@@ -400,7 +397,7 @@ app.put("/api/market-schedule/:id", (req, res) => {
       openWeekdays.join(","),
       (holidays || []).join(","),
       status ? 1 : 0,
-      id
+      id,
     ],
     (err, result) => {
       if (err) {
@@ -413,6 +410,76 @@ app.put("/api/market-schedule/:id", (req, res) => {
   );
 });
 
+// post to deposit cash
+app.post("/api/deposit", (req, res) => {
+  const { userID, amount } = req.body;
+  const amt = parseFloat(amount);
+
+  if (!userID || isNaN(amt) || amt <= 0) {
+    return res
+      .status(400)
+      .json({ error: "userID and positive amount required" });
+  }
+  const upsert = `
+    INSERT INTO CashAccounts (UserID, Balance)
+    VALUES (?, ?)
+    ON DUPLICATE KEY UPDATE Balance = Balance + VALUES(Balance)
+  `;
+  db.query(upsert, [userID, amt], (err) => {
+    if (err) {
+      console.error("Deposit failed:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    db.query(
+      "SELECT Balance FROM CashAccounts WHERE UserID = ?",
+      [userID],
+      (err2, rows) => {
+        if (err2 || rows.length === 0) {
+          return res.status(500).json({ error: "Could not read balance" });
+        }
+        res.json({ message: "Deposit successful", balance: rows[0].Balance });
+      }
+    );
+  });
+});
+
+// post to withdraw cash
+app.post("/api/withdraw", (req, res) => {
+  const { userID, amount } = req.body;
+  const amt = parseFloat(amount);
+  if (!userID || isNaN(amt) || amt <= 0) {
+    return res
+      .status(400)
+      .json({ error: "userID and positive amount required" });
+  }
+  const deduct = `
+    UPDATE CashAccounts
+       SET Balance = Balance - ?
+     WHERE UserID = ? AND Balance >= ?
+  `;
+  db.query(deduct, [amt, userID, amt], (err, result) => {
+    if (err) {
+      console.error("Withdrawal failed:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ error: "Insufficient funds" });
+    }
+    db.query(
+      "SELECT Balance FROM CashAccounts WHERE UserID = ?",
+      [userID],
+      (err2, rows) => {
+        if (err2 || rows.length === 0) {
+          return res.status(500).json({ error: "Could not read balance" });
+        }
+        res.json({
+          message: "Withdrawal successful",
+          balance: rows[0].Balance,
+        });
+      }
+    );
+  });
+});
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client", "index.html"));
