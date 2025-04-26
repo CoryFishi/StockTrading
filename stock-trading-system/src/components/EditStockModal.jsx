@@ -40,6 +40,10 @@ const EditStockModal = ({ selectedStock, setIsEditStockOpen }) => {
     e.preventDefault();
     setMessage("");
     const id = selectedStock?.id;
+    console.log("Submitting update with id:", id);
+    console.log("Submitting update with data:", formData);
+    
+
     if (!id) return setMessage("Missing stock ID.");
 
     try {
