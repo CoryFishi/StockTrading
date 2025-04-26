@@ -472,6 +472,80 @@ app.put("/api/market-schedule/:id", (req, res) => {
   );
 });
 
+// post to deposit cash
+app.post("/api/deposit", (req, res) => {
+  const { userID, amount } = req.body;
+  const amt = parseFloat(amount);
+
+  if (!userID || isNaN(amt) || amt <= 0) {
+    return res.status(400).json({ error: "userID and positive amount required" });
+  }
+
+  const upsert = `
+    INSERT INTO CashAccounts (UserID, Balance)
+    VALUES (?, ?)
+    ON DUPLICATE KEY UPDATE Balance = Balance + VALUES(Balance)
+  `;
+
+  db.query(upsert, [userID, amt], (err) => {
+    if (err) {
+      console.error("Deposit failed:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    db.query(
+      "SELECT Balance FROM CashAccounts WHERE UserID = ?",
+      [userID],
+      (err2, rows) => {
+        if (err2 || rows.length === 0) {
+          return res.status(500).json({ error: "Could not read balance" });
+        }
+
+        res.json({ message: "Deposit successful", balance: rows[0].Balance });
+      }
+    );
+  });
+});
+
+// post to withdraw cash
+app.post("/api/withdraw", (req, res) => {
+  const { userID, amount } = req.body;
+  const amt = parseFloat(amount);
+  if (!userID || isNaN(amt) || amt <= 0) {
+    return res
+      .status(400)
+      .json({ error: "userID and positive amount required" });
+  }
+  const deduct = `
+  UPDATE CashAccounts
+  SET Balance = Balance - ?
+  WHERE UserID = ? AND Balance >= ?
+`;
+
+  db.query(deduct, [amt, userID, amt], (err, result) => {
+    if (err) {
+      console.error("Withdrawal failed:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ error: "Insufficient funds" });
+    }
+    db.query(
+      "SELECT Balance FROM CashAccounts WHERE UserID = ?",
+      [userID],
+      (err2, rows) => {
+        if (err2 || rows.length === 0) {
+                    return res.status(500).json({ error: "Could not read balance" });
+        }
+        res.json({
+          message: "Withdrawal successful",
+          balance: rows[0].Balance,
+        });
+      }
+    );
+  });
+});
+
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client", "index.html"));
