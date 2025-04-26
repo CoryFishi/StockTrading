@@ -21,11 +21,7 @@ const io = new Server(server, {
 });
 
 // Middleware
-app.use(cors({
-  origin: "http://3.90.131.54", // exact frontend domain
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json()); // Parse JSON bodies
 
 AWS.config.update({ region: "us-east-1" });
@@ -52,9 +48,7 @@ function updateStockPrices() {
     results.forEach((stock) => {
       const currentPrice = parseFloat(stock.CurrentPrice);
       const now = new Date();
-      const time = `${String(now.getHours()).padStart(2, "0")}:${String(
-        now.getMinutes()
-      ).padStart(2, "0")}`;
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
       let history = [];
       try {
@@ -70,11 +64,11 @@ function updateStockPrices() {
 
       // Update only the history field
       db.query(
-        `UPDATE stocks SET history = ? WHERE id = ?`,
+        'UPDATE stocks SET history = ? WHERE id = ?',
         [JSON.stringify(history), stock.id],
         (err) => {
           if (err)
-            console.error(`Error updating history for ${stock.Ticker}:`, err);
+            console.error('Error updating history for ${stock.Ticker}:', err);
         }
       );
     });
@@ -131,15 +125,18 @@ app.post("/api/addStock", (req, res) => {
     req.body;
 
   if (!ticker || !company || !price || !volume) {
-    return res.status(400).json({
-      error: "Ticker, Company, CurrentPrice, and Volume are required",
-    });
+    return res
+      .status(400)
+      .json({
+        error: "Ticker, Company, CurrentPrice, and Volume are required",
+      });
   }
 
   const query = `
   INSERT INTO stocks (Ticker, CompanyName, InitialPrice, CurrentPrice, Volume, dayHigh, dayLow, dayStart, dayEnd, history)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
+
 
   db.query(
     query,
@@ -197,9 +194,10 @@ app.post("/api/register", async (req, res) => {
 
       // Insert user
       const insertQuery = `
-        INSERT INTO User (FullName, Username, Password, Email, UserType, CashBalance)
-        VALUES (?, ?, ?, ?, ?, 10000.00)
-      `;
+      INSERT INTO User (FullName, Username, Password, Email, UserType, CashBalance)
+      VALUES (?, ?, ?, ?, ?, 10000.00)
+    `;
+    
       db.query(
         insertQuery,
         [FullName, Username, hashedPassword, Email, UserType],
@@ -232,9 +230,9 @@ app.post("/api/login", (req, res) => {
   }
 
   const query = `
-    SELECT * FROM User
-    WHERE Username = ? OR Email = ?
-  `;
+  SELECT * FROM User
+  WHERE Username = ? OR Email = ?
+`;
 
   db.query(query, [UsernameOrEmail, UsernameOrEmail], async (err, results) => {
     if (err) {
@@ -304,7 +302,7 @@ app.delete("/api/deleteStock/:id", (req, res) => {
     res
       .status(200)
       .json({ message: `Stock with id ${id} deleted successfully` });
-  });
+    });
 });
 
 // Existing delete stock endpoint
@@ -340,18 +338,18 @@ app.put("/api/stock/:id", (req, res) => {
   } = req.body;
 
   const query = `
-    UPDATE stocks
-    SET 
-      Ticker = ?, 
-      CompanyName = ?, 
-      CurrentPrice = ?, 
-      Volume = ?, 
-      dayHigh = ?, 
-      dayLow = ?, 
-      dayStart = ?, 
-      dayEnd = ?
-    WHERE id = ?
-  `;
+  UPDATE stocks
+  SET 
+    Ticker = ?, 
+    CompanyName = ?, 
+    CurrentPrice = ?, 
+    Volume = ?, 
+    dayHigh = ?, 
+    dayLow = ?, 
+    dayStart = ?, 
+    dayEnd = ?
+  WHERE id = ?
+`;
 
   db.query(
     query,
@@ -375,17 +373,18 @@ app.get("/api/portfolio/:userID", (req, res) => {
   const userID = req.params.userID;
 
   const query = `
-    SELECT 
-      p.PortfolioID,
-      p.StockID,
-      s.Ticker,
-      s.CompanyName,
-      p.Quantity,
-      p.AveragePrice
-    FROM Portfolio p
-    JOIN stocks s ON p.StockID = s.id
-    WHERE p.UserID = ?
-  `;
+  SELECT 
+    p.PortfolioID,
+    p.StockID,
+    s.Ticker,
+    s.CompanyName,
+    p.Quantity,
+    p.AveragePrice
+  FROM Portfolio p
+  JOIN stocks s ON p.StockID = s.id
+  WHERE p.UserID = ?
+`;
+
 
   db.query(query, [userID], (err, results) => {
     if (err) {
@@ -418,30 +417,27 @@ server.listen(SOCKET_PORT, () => {
   console.log(`Socket.IO server running on port ${SOCKET_PORT}`);
 });
 
+//Frontend
+app.use(express.static(path.join(__dirname, "client")));
+
 
 // GET the current market schedule
 app.get("/api/market-schedule", (req, res) => {
   db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
-    if (err) {
-      console.error("Error fetching market schedule:", err);
-      return res.status(500).json({ error: "Failed to fetch market schedule" });
-    }
-    if (results.length === 0) {
-      return res.status(404).json({ error: "No market schedule found" });
-    }
+    if (err) return res.status(500).json({ error: "Failed to fetch market schedule" });
+    if (results.length === 0) return res.status(404).json({ error: "No market schedule found" });
 
     const row = results[0];
-    const schedule = {
-      openTime: row.MarketOpen.slice(0, 5),
-      closeTime: row.MarketClose.slice(0, 5),
-      openWeekdays: row.OpenDays.split(",").map((d) => parseInt(d)),
-      holidays: row.Holidays ? row.Holidays.split(",") : [],
-      status: !!row.MarketStatus,
-    };
-
-    res.json(schedule);
+    res.json({
+      MarketOpen: row.MarketOpen?.slice(0, 5) || "",
+      MarketClose: row.MarketClose?.slice(0, 5) || "",
+      OpenDays: row.OpenDays || "",
+      Holidays: row.Holidays || "",
+      MarketStatus: row.MarketStatus ?? 0,
+    });
   });
 });
+
 
 // PUT update market schedule
 app.put("/api/market-schedule/:id", (req, res) => {
@@ -449,10 +445,11 @@ app.put("/api/market-schedule/:id", (req, res) => {
   const { openTime, closeTime, openWeekdays, holidays, status } = req.body;
 
   const updateQuery = `
-    UPDATE MarketSchedule
-    SET MarketOpen = ?, MarketClose = ?, OpenDays = ?, Holidays = ?, MarketStatus = ?
-    WHERE MarketScheduleID = ?
-  `;
+  UPDATE MarketSchedule
+  SET MarketOpen = ?, MarketClose = ?, OpenDays = ?, Holidays = ?, MarketStatus = ?
+  WHERE MarketScheduleID = ?
+`;
+
 
   db.query(
     updateQuery,
@@ -462,7 +459,7 @@ app.put("/api/market-schedule/:id", (req, res) => {
       openWeekdays.join(","),
       (holidays || []).join(","),
       status ? 1 : 0,
-      id,
+      id
     ],
     (err, result) => {
       if (err) {
@@ -475,27 +472,27 @@ app.put("/api/market-schedule/:id", (req, res) => {
   );
 });
 
-
 // post to deposit cash
 app.post("/api/deposit", (req, res) => {
   const { userID, amount } = req.body;
   const amt = parseFloat(amount);
 
   if (!userID || isNaN(amt) || amt <= 0) {
-    return res
-      .status(400)
-      .json({ error: "userID and positive amount required" });
+    return res.status(400).json({ error: "userID and positive amount required" });
   }
+
   const upsert = `
     INSERT INTO CashAccounts (UserID, Balance)
     VALUES (?, ?)
     ON DUPLICATE KEY UPDATE Balance = Balance + VALUES(Balance)
   `;
+
   db.query(upsert, [userID, amt], (err) => {
     if (err) {
       console.error("Deposit failed:", err);
       return res.status(500).json({ error: "Database error" });
     }
+
     db.query(
       "SELECT Balance FROM CashAccounts WHERE UserID = ?",
       [userID],
@@ -503,6 +500,7 @@ app.post("/api/deposit", (req, res) => {
         if (err2 || rows.length === 0) {
           return res.status(500).json({ error: "Could not read balance" });
         }
+
         res.json({ message: "Deposit successful", balance: rows[0].Balance });
       }
     );
@@ -519,10 +517,11 @@ app.post("/api/withdraw", (req, res) => {
       .json({ error: "userID and positive amount required" });
   }
   const deduct = `
-    UPDATE CashAccounts
-       SET Balance = Balance - ?
-     WHERE UserID = ? AND Balance >= ?
-  `;
+  UPDATE CashAccounts
+  SET Balance = Balance - ?
+  WHERE UserID = ? AND Balance >= ?
+`;
+
   db.query(deduct, [amt, userID, amt], (err, result) => {
     if (err) {
       console.error("Withdrawal failed:", err);
@@ -536,7 +535,7 @@ app.post("/api/withdraw", (req, res) => {
       [userID],
       (err2, rows) => {
         if (err2 || rows.length === 0) {
-          return res.status(500).json({ error: "Could not read balance" });
+                    return res.status(500).json({ error: "Could not read balance" });
         }
         res.json({
           message: "Withdrawal successful",
@@ -547,9 +546,6 @@ app.post("/api/withdraw", (req, res) => {
   });
 });
 
-
-//Frontend
-app.use(express.static(path.join(__dirname, "client")));
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client", "index.html"));
