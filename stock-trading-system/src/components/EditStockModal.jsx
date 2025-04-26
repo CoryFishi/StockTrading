@@ -39,21 +39,20 @@ const EditStockModal = ({ selectedStock, setIsEditStockOpen }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
+    const id = selectedStock?.id;
+    if (!id) return setMessage("Missing stock ID.");
 
     try {
-      await axios.put(
-        `${API_BASE_URL}/api/stocks/${selectedStock.id}`,
-        formData
-      );
+await axios.put(`${API_BASE_URL}/api/stock/${id}`, formData);
       setMessage("Stock updated!");
       setTimeout(() => setIsEditStockOpen(false), 800); // close after flash
     } catch (err) {
+      console.error("Update error:", err.response?.data || err.message); // good debug
       setMessage(
         err.response?.data?.error || "Update failed – please try again."
       );
     }
   };
-
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
       <div className="w-full max-w-lg bg-white dark:bg-zinc-800 rounded-lg shadow-lg p-6 space-y-4">
