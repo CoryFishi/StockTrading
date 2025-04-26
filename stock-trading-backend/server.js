@@ -324,7 +324,7 @@ app.delete("/api/deleteStock/:id", (req, res) => {
 });
 
 // Edit stock endpoint
-app.put("/api/editstock/:id", (req, res) => {
+app.put("/api/stock/:id", (req, res) => {
   const { id } = req.params;
   const {
     ticker,
