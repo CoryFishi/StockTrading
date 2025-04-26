@@ -4,6 +4,7 @@ import { MdExpandLess, MdExpandMore } from "react-icons/md";
 import DepositModal from "./DepositModal";
 import Logo from "../assets/logo.png";
 import WithdrawModal from "./WithdrawModal";
+import TransactionsModal from "./TransactionsModal";
 
 export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
   const location = useLocation();
@@ -12,6 +13,7 @@ export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
+  const [isTransactionsModalOpen, setIsTransactionsModalOpen] = useState(false);
   const userRef = useRef(null);
 
   // Close dropdown on outside click
@@ -40,6 +42,11 @@ export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
     setIsDepositModalOpen(true);
   };
 
+  const handleTransactions = () => {
+    setIsDropdownOpen(false);
+    setIsTransactionsModalOpen(true);
+  };
+
   return (
     <nav className="w-full left-0 z-50 px-6 py-3 shadow-md transition-all bg-white dark:bg-zinc-900 text-black dark:text-white">
       {isDepositModalOpen && (
@@ -52,6 +59,12 @@ export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
         <WithdrawModal
           isWithdrawModalOpen={isWithdrawModalOpen}
           setIsWithdrawModalOpen={setIsWithdrawModalOpen}
+        />
+      )}
+      {isTransactionsModalOpen && (
+        <TransactionsModal
+          isTransactionsModalOpen={isTransactionsModalOpen}
+          setIsTransactionsModalOpen={setIsTransactionsModalOpen}
         />
       )}
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -115,13 +128,12 @@ export default function Navbar({ darkMode, toggleDarkMode, setIsRegister }) {
                   >
                     {darkMode ? "Light Mode" : "Dark Mode"}
                   </button>
-                  {/* Account page is out of scope. Leave this for last as we do not need it for MVP */}
-                  {/* <Link
-                    to="/account"
-                    className="block px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                  <button
+                    onClick={handleTransactions}
+                    className="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700"
                   >
-                    Account
-                  </Link> */}
+                    Transactions
+                  </button>
                   <button
                     onClick={handleDeposit}
                     className="w-full text-left px-4 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-700"
