@@ -41,6 +41,18 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/market-schedule`);
         const data = await res.json();
+        
+        const normalized = {
+          MarketOpen: data.openTime || "",
+          MarketClose: data.closeTime || "",
+          OpenDays: Array.isArray(data.openWeekdays) ? data.openWeekdays.join(",") : "",
+          Holidays: Array.isArray(data.holidays) ? data.holidays.join(",") : "",
+          MarketStatus: data.status ? 1 : 0,
+        };
+        
+        setSchedule(normalized);
+        
+        console.log("Fetched market schedule:", data); // ✅ Log it
         setSchedule(data);
       } catch (err) {
         console.error("Failed to fetch market schedule:", err);
