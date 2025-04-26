@@ -21,7 +21,11 @@ const io = new Server(server, {
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "http://3.90.131.54", // exact frontend domain
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 app.use(express.json()); // Parse JSON bodies
 
 AWS.config.update({ region: "us-east-1" });
@@ -305,6 +309,69 @@ app.delete("/api/deleteStock/:id", (req, res) => {
   });
 });
 
+// Existing delete stock endpoint
+app.delete("/api/deleteStock/:id", (req, res) => {
+  const { id } = req.params;
+  const query = "DELETE FROM stocks WHERE id = ?";
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error deleting stock:", err);
+      return res.status(500).json({ error: "Database query failed" });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ error: "Stock not found" });
+    }
+
+    res.status(200).json({ message: `Stock with id ${id} deleted successfully` });
+  });
+});
+
+// Edit stock endpoint
+app.put("/api/stock/:id", (req, res) => {
+  const { id } = req.params;
+  const {
+    ticker,
+    company,
+    price,
+    volume,
+    dayHigh,
+    dayLow,
+    dayStart,
+    dayEnd,
+  } = req.body;
+
+  const query = `
+    UPDATE stocks
+    SET 
+      Ticker = ?, 
+      CompanyName = ?, 
+      CurrentPrice = ?, 
+      Volume = ?, 
+      dayHigh = ?, 
+      dayLow = ?, 
+      dayStart = ?, 
+      dayEnd = ?
+    WHERE id = ?
+  `;
+
+  db.query(
+    query,
+    [ticker, company, price, volume, dayHigh, dayLow, dayStart, dayEnd, id],
+    (err, results) => {
+      if (err) {
+        console.error("Error updating stock:", err);
+        return res.status(500).json({ error: "Database update failed." });
+      }
+
+      res.status(200).json({ message: "Stock updated successfully." });
+    }
+  );
+});
+
+
+
+
 // Get portfolio for a user
 app.get("/api/portfolio/:userID", (req, res) => {
   const userID = req.params.userID;
@@ -353,8 +420,6 @@ server.listen(SOCKET_PORT, () => {
   console.log(`Socket.IO server running on port ${SOCKET_PORT}`);
 });
 
-//Frontend
-app.use(express.static(path.join(__dirname, "client")));
 
 
 // GET the current market schedule
@@ -413,7 +478,8 @@ app.put("/api/market-schedule/:id", (req, res) => {
   );
 });
 
-
+//Frontend
+app.use(express.static(path.join(__dirname, "client")));
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "client", "index.html"));
 });
