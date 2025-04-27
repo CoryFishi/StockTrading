@@ -114,38 +114,40 @@ function updateStockPrices() {
 
     if (results.length > 0) {
       const schedule = results[0];
+      if (!schedule.MarketOpen || !schedule.MarketClose || !schedule.OpenDays) {
+        console.error("Market schedule incomplete (missing open/close times or open days). Skipping stock update.");
+        return;
+      }
       const now = new Date();
       const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-      const [openHour, openMinute] = (schedule.MarketOpen || "09:00:00").split(":").map(Number);
-      const [closeHour, closeMinute] = (schedule.MarketClose || "17:00:00").split(":").map(Number);
+      const [openHour, openMinute] = schedule.MarketOpen.split(":").map(Number);
+      const [closeHour, closeMinute] = schedule.MarketClose.split(":").map(Number);
 
       const openMinutes = openHour * 60 + openMinute;
       const closeMinutes = closeHour * 60 + closeMinute;
 
+
+
+
       // 🆕 Check open days too
-      const openDays = (schedule.OpenDays || "")
-        .split(",")
-        .map(Number)
-        .filter((n) => !isNaN(n));
-
+      const openDays = schedule.OpenDays.split(",").map(Number).filter((n) => !isNaN(n));
       let dayOfWeek = now.getDay();
-      dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; // Adjust Sunday = 7
+      dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; // Adjust Sunday
 
-      const isTimeOpen = (currentMinutes >= openMinutes && currentMinutes <= closeMinutes);
+      const isTimeOpen = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
       const isDayOpen = openDays.includes(dayOfWeek);
 
       const newStatus = (isTimeOpen && isDayOpen) ? 1 : 0;
-
       console.log("Checking market status...");
-console.log(`Now: ${now}`);
-console.log(`OpenDays: ${openDays}`);
-console.log(`Today is day ${dayOfWeek}`);
-console.log(`MarketOpen Time: ${openMinutes} mins, MarketClose Time: ${closeMinutes} mins`);
-console.log(`Current Time: ${currentMinutes} mins`);
-console.log(`isTimeOpen: ${isTimeOpen}`);
-console.log(`isDayOpen: ${isDayOpen}`);
-console.log(`newStatus will be: ${newStatus}`);
+      console.log(`Now: ${now}`);
+      console.log(`OpenDays: ${openDays}`);
+      console.log(`Today is day ${dayOfWeek}`);
+      console.log(`MarketOpen Time: ${openMinutes} mins, MarketClose Time: ${closeMinutes} mins`);
+      console.log(`Current Time: ${currentMinutes} mins`);
+      console.log(`isTimeOpen: ${isTimeOpen}`);
+      console.log(`isDayOpen: ${isDayOpen}`);
+      console.log(`newStatus will be: ${newStatus}`);
 
 
       if (newStatus !== schedule.MarketStatus) {
@@ -164,7 +166,7 @@ console.log(`newStatus will be: ${newStatus}`);
     }
   });
 
-  // --- Your normal stock updating code continues here ---
+  // update stock prices
   console.log("Updating stock prices...");
   db.query("SELECT * FROM stocks", (err, results) => {
     if (err) {
@@ -213,51 +215,51 @@ console.log(`newStatus will be: ${newStatus}`);
 }
 
 
-  console.log("Updating stock prices...");
-  db.query("SELECT * FROM stocks", (err, results) => {
+console.log("Updating stock prices...");
+db.query("SELECT * FROM stocks", (err, results) => {
+  if (err) {
+    console.error("Error fetching stocks:", err);
+    return;
+  }
+
+  results.forEach((stock) => {
+    const currentPrice = parseFloat(stock.CurrentPrice);
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+    let history = [];
+    try {
+      history = JSON.parse(stock.history) || [];
+      if (!Array.isArray(history)) history = [];
+    } catch {
+      history = [];
+    }
+
+    // Append the current price to the history
+    history.push({ time, price: currentPrice.toFixed(2) });
+    if (history.length > 20) history.shift(); // Trim to last 20
+
+    // Update only the history field
+    db.query(
+      'UPDATE stocks SET history = ? WHERE id = ?',
+      [JSON.stringify(history), stock.id],
+      (err) => {
+        if (err)
+          console.error('Error updating history for ${stock.Ticker}:', err);
+      }
+    );
+  });
+
+  // Emit updated stock data
+  db.query("SELECT * FROM stocks", (err, updatedStocks) => {
     if (err) {
-      console.error("Error fetching stocks:", err);
+      console.error("Error fetching updated stocks:", err);
       return;
     }
 
-    results.forEach((stock) => {
-      const currentPrice = parseFloat(stock.CurrentPrice);
-      const now = new Date();
-      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-      let history = [];
-      try {
-        history = JSON.parse(stock.history) || [];
-        if (!Array.isArray(history)) history = [];
-      } catch {
-        history = [];
-      }
-
-      // Append the current price to the history
-      history.push({ time, price: currentPrice.toFixed(2) });
-      if (history.length > 20) history.shift(); // Trim to last 20
-
-      // Update only the history field
-      db.query(
-        'UPDATE stocks SET history = ? WHERE id = ?',
-        [JSON.stringify(history), stock.id],
-        (err) => {
-          if (err)
-            console.error('Error updating history for ${stock.Ticker}:', err);
-        }
-      );
-    });
-
-    // Emit updated stock data
-    db.query("SELECT * FROM stocks", (err, updatedStocks) => {
-      if (err) {
-        console.error("Error fetching updated stocks:", err);
-        return;
-      }
-
-      io.emit("stockUpdate", updatedStocks);
-    });
+    io.emit("stockUpdate", updatedStocks);
   });
+});
 
 
 // WebSocket connection
@@ -374,7 +376,7 @@ app.post("/api/register", async (req, res) => {
       INSERT INTO User (FullName, Username, Password, Email, UserType, CashBalance)
       VALUES (?, ?, ?, ?, ?, 10000.00)
     `;
-    
+
       db.query(
         insertQuery,
         [FullName, Username, hashedPassword, Email, UserType],
@@ -479,7 +481,7 @@ app.delete("/api/deleteStock/:id", (req, res) => {
     res
       .status(200)
       .json({ message: `Stock with id ${id} deleted successfully` });
-    });
+  });
 });
 
 // Existing delete stock endpoint
@@ -624,7 +626,9 @@ app.put("/api/market-schedule/:id", (req, res) => {
 
   const MarketOpen = openTime || "09:00:00";
   const MarketClose = closeTime || "17:00:00";
-  const OpenDays = Array.isArray(openWeekdays) ? openWeekdays.join(",") : "";
+  const OpenDays = Array.isArray(openWeekdays) && openWeekdays.length > 0
+  ? openWeekdays.join(",")
+  : "1,2,3,4,5"; // Default open everyday if missing
   const Holidays = Array.isArray(holidays) ? holidays.join(",") : "";
   const MarketStatus = status ? 1 : 0;
 
@@ -719,7 +723,7 @@ app.post("/api/withdraw", (req, res) => {
       [userID],
       (err2, rows) => {
         if (err2 || rows.length === 0) {
-                    return res.status(500).json({ error: "Could not read balance" });
+          return res.status(500).json({ error: "Could not read balance" });
         }
         res.json({
           message: "Withdrawal successful",
