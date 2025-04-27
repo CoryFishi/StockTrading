@@ -35,19 +35,18 @@ function sanitizeNumber(value, fallback = 0) {
   return isNaN(num) ? fallback : num;
 }
 
-// Function to simulate and price updates
-function updateStockPrices() {
-// Check if market should be open or closed
-db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
-  if (err) {
-    console.error("Error fetching market schedule:", err);
-    return;
-  }
+function updateMarketStatus() {
+  db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
+    if (err) {
+      console.error("Error fetching market schedule:", err);
+      return;
+    }
+    if (results.length === 0) return;
 
-  if (results.length > 0) {
     const schedule = results[0];
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    const today = now.getDay() === 0 ? 7 : now.getDay(); // Sunday fix
 
     const [openHour, openMinute] = (schedule.MarketOpen || "09:00:00").split(":").map(Number);
     const [closeHour, closeMinute] = (schedule.MarketClose || "17:00:00").split(":").map(Number);
@@ -55,23 +54,142 @@ db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
     const openMinutes = openHour * 60 + openMinute;
     const closeMinutes = closeHour * 60 + closeMinute;
 
-    let newStatus = (currentMinutes >= openMinutes && currentMinutes <= closeMinutes) ? 1 : 0;
+    const openDays = (schedule.OpenDays || "").split(",").map(Number);
+    const isDayOpen = openDays.includes(today);
+    const isTimeOpen = currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+    const shouldBeOpen = isDayOpen && isTimeOpen;
 
-    if (newStatus !== schedule.MarketStatus) {
+    if (schedule.MarketStatus !== (shouldBeOpen ? 1 : 0)) {
       db.query(
         "UPDATE MarketSchedule SET MarketStatus = ? WHERE MarketScheduleID = ?",
-        [newStatus, schedule.MarketScheduleID],
+        [shouldBeOpen ? 1 : 0, schedule.MarketScheduleID],
         (updateErr) => {
           if (updateErr) {
             console.error("Failed to update MarketStatus:", updateErr);
           } else {
-            console.log(`Market status updated to: ${newStatus === 1 ? "Open" : "Closed"}`);
+            console.log(`Market status updated to: ${shouldBeOpen ? "Open" : "Closed"}`);
           }
         }
       );
+    } else {
+      console.log(`Market status already correct (${shouldBeOpen ? "Open" : "Closed"}), no update needed.`);
     }
-  }
-});
+  });
+}
+
+
+
+
+
+// Function to simulate and price updates
+function updateStockPrices() {
+  // Check if market should be open or closed
+  db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
+    if (err) {
+      console.error("Error fetching market schedule:", err);
+      return;
+    }
+
+    if (results.length > 0) {
+      const schedule = results[0];
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const [openHour, openMinute] = (schedule.MarketOpen || "09:00:00").split(":").map(Number);
+      const [closeHour, closeMinute] = (schedule.MarketClose || "17:00:00").split(":").map(Number);
+
+      const openMinutes = openHour * 60 + openMinute;
+      const closeMinutes = closeHour * 60 + closeMinute;
+
+      // 🆕 Check open days too
+      const openDays = (schedule.OpenDays || "")
+        .split(",")
+        .map(Number)
+        .filter((n) => !isNaN(n));
+
+      let dayOfWeek = now.getDay();
+      dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; // Adjust Sunday = 7
+
+      const isTimeOpen = (currentMinutes >= openMinutes && currentMinutes <= closeMinutes);
+      const isDayOpen = openDays.includes(dayOfWeek);
+
+      const newStatus = (isTimeOpen && isDayOpen) ? 1 : 0;
+
+      console.log("Checking market status...");
+console.log(`Now: ${now}`);
+console.log(`OpenDays: ${openDays}`);
+console.log(`Today is day ${dayOfWeek}`);
+console.log(`MarketOpen Time: ${openMinutes} mins, MarketClose Time: ${closeMinutes} mins`);
+console.log(`Current Time: ${currentMinutes} mins`);
+console.log(`isTimeOpen: ${isTimeOpen}`);
+console.log(`isDayOpen: ${isDayOpen}`);
+console.log(`newStatus will be: ${newStatus}`);
+
+
+      if (newStatus !== schedule.MarketStatus) {
+        db.query(
+          "UPDATE MarketSchedule SET MarketStatus = ? WHERE MarketScheduleID = ?",
+          [newStatus, schedule.MarketScheduleID],
+          (updateErr) => {
+            if (updateErr) {
+              console.error("Failed to update MarketStatus:", updateErr);
+            } else {
+              console.log(`Market status updated to: ${newStatus === 1 ? "Open" : "Closed"}`);
+            }
+          }
+        );
+      }
+    }
+  });
+
+  // --- Your normal stock updating code continues here ---
+  console.log("Updating stock prices...");
+  db.query("SELECT * FROM stocks", (err, results) => {
+    if (err) {
+      console.error("Error fetching stocks:", err);
+      return;
+    }
+
+    results.forEach((stock) => {
+      const currentPrice = parseFloat(stock.CurrentPrice);
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+      let history = [];
+      try {
+        history = JSON.parse(stock.history) || [];
+        if (!Array.isArray(history)) history = [];
+      } catch {
+        history = [];
+      }
+
+      // Append the current price to the history
+      history.push({ time, price: currentPrice.toFixed(2) });
+      if (history.length > 20) history.shift(); // Trim to last 20
+
+      // Update only the history field
+      db.query(
+        "UPDATE stocks SET history = ? WHERE id = ?",
+        [JSON.stringify(history), stock.id],
+        (err) => {
+          if (err)
+            console.error(`Error updating history for ${stock.Ticker}:`, err);
+        }
+      );
+    });
+
+    // Emit updated stock data
+    db.query("SELECT * FROM stocks", (err, updatedStocks) => {
+      if (err) {
+        console.error("Error fetching updated stocks:", err);
+        return;
+      }
+
+      io.emit("stockUpdate", updatedStocks);
+    });
+  });
+}
+
 
   console.log("Updating stock prices...");
   db.query("SELECT * FROM stocks", (err, results) => {
@@ -118,7 +236,7 @@ db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
       io.emit("stockUpdate", updatedStocks);
     });
   });
-}
+
 
 // WebSocket connection
 io.on("connection", (socket) => {
@@ -140,8 +258,10 @@ io.on("connection", (socket) => {
 });
 
 // Update stock prices every 30 seconds
-setInterval(updateStockPrices, 30000);
-
+setInterval(() => {
+  updateMarketStatus();  // check and adjust market status
+  updateStockPrices();   // update stock price histories
+}, 30000);
 //
 app.get("/api/data", (req, res) => {
   console.log("/api/data was hit");
@@ -457,6 +577,7 @@ app.use(express.static(path.join(__dirname, "client")));
 
 
 // GET the current market schedule
+
 app.get("/api/market-schedule", (req, res) => {
   db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to fetch market schedule" });
@@ -477,7 +598,13 @@ app.get("/api/market-schedule", (req, res) => {
 // PUT update market schedule
 app.put("/api/market-schedule/:id", (req, res) => {
   const { id } = req.params;
-  const { MarketOpen, MarketClose, OpenDays, Holidays, MarketStatus } = req.body;
+  const { openTime, closeTime, openWeekdays, holidays, status } = req.body;
+
+  const MarketOpen = openTime || "09:00:00";
+  const MarketClose = closeTime || "17:00:00";
+  const OpenDays = Array.isArray(openWeekdays) ? openWeekdays.join(",") : "";
+  const Holidays = Array.isArray(holidays) ? holidays.join(",") : "";
+  const MarketStatus = status ? 1 : 0;
 
   const updateQuery = `
     UPDATE MarketSchedule

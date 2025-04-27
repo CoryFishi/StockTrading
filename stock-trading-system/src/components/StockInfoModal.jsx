@@ -45,43 +45,45 @@ const StockInfoModal = ({
   }, [isStockInfoModalOpen, selectedStock, user.userID]);
 
   // 🆕 Fetch market open status when modal opens
-  useEffect(() => {
-    if (!isStockInfoModalOpen) return;
+  // 🆕 Fetch market open status when modal opens
+useEffect(() => {
+  if (!isStockInfoModalOpen) return;
 
-    (async () => {
-      try {
-        const res = await axios.get("http://3.90.131.54/api/market-schedule");
-        const data = res.data;
+  (async () => {
+    try {
+      const res = await axios.get("http://3.90.131.54/api/market-schedule");
+      const data = res.data;
 
-        const now = new Date();
-        const [openH, openM] = (data.openTime || "09:00").split(":");
-        const [closeH, closeM] = (data.closeTime || "17:00").split(":");
+      const now = new Date();
+      const [openH, openM] = (data.MarketOpen || "09:00").split(":");
+      const [closeH, closeM] = (data.MarketClose || "17:00").split(":");
 
-        const open = new Date();
-        open.setHours(openH, openM, 0, 0);
+      const open = new Date();
+      open.setHours(openH, openM, 0, 0);
 
-        const close = new Date();
-        close.setHours(closeH, closeM, 0, 0);
+      const close = new Date();
+      close.setHours(closeH, closeM, 0, 0);
 
-        // Adjust so Sunday=7, Monday=1
-        let dayOfWeek = now.getDay();
-        dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; 
+      // Adjust so Sunday=7, Monday=1
+      let dayOfWeek = now.getDay();
+      dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
 
-        const openDays = Array.isArray(data.openWeekdays)
-          ? data.openWeekdays.map(Number)
-          : [];
+      const openDays = (data.OpenDays || "")
+        .split(",")
+        .map(Number)
+        .filter((d) => !isNaN(d));
 
-        const isDayOpen = openDays.includes(dayOfWeek);
-        const isTimeOpen = now >= open && now <= close;
-        const isMarketOpen = data.status && isDayOpen && isTimeOpen;
+      const isDayOpen = openDays.includes(dayOfWeek);
+      const isTimeOpen = now >= open && now <= close;
+      const isMarketOpen = (data.MarketStatus === 1) && isDayOpen && isTimeOpen;
 
-        setMarketOpen(isMarketOpen);
-      } catch (error) {
-        console.error("Failed to fetch market status", error);
-        setMarketOpen(true); // fallback to allow trading if API fails
-      }
-    })();
-  }, [isStockInfoModalOpen]);
+      setMarketOpen(isMarketOpen);
+    } catch (error) {
+      console.error("Failed to fetch market status", error);
+      setMarketOpen(true); // fallback to allow trading if API fails
+    }
+  })();
+}, [isStockInfoModalOpen]);
 
   if (!isStockInfoModalOpen || !selectedStock) return null;
 
