@@ -33,28 +33,34 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
   const [selectedDays, setSelectedDays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  
   useEffect(() => {
     if (!isOpen) return;
-  
     (async () => {
       setLoading(true);
       try {
         const res = await fetch(`${API_BASE_URL}/api/market-schedule`);
         const data = await res.json();
   
+        // Set form fields based on fetched data
         setSchedule({
-          MarketOpen: data.openTime || "",
-          MarketClose: data.closeTime || "",
-          Holidays: Array.isArray(data.holidays) ? data.holidays.join(",") : "",
-          MarketStatus: data.status ? 1 : 0,
+          MarketOpen: data.MarketOpen || "09:00:00",
+          MarketClose: data.MarketClose || "17:00:00",
+          Holidays: data.Holidays || "",
+          MarketStatus: data.MarketStatus ?? 1,
         });
   
-        if (Array.isArray(data.openWeekdays)) {
-          setSelectedDays(data.openWeekdays.map(Number));
+        // Parse OpenDays (comma-separated string) into selectedDays array
+        if (typeof data.OpenDays === "string" && data.OpenDays.length > 0) {
+          setSelectedDays(
+            data.OpenDays.split(",").map((day) => parseInt(day.trim(), 10))
+          );
         } else {
           setSelectedDays([]);
         }
+  
       } catch (err) {
         console.error("Failed to fetch market schedule:", err);
       } finally {
@@ -77,25 +83,41 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
 
   const handleSave = async () => {
     setSaving(true);
+    setSuccessMessage("");
+    setErrorMessage("");
     try {
-      await fetch(`${API_BASE_URL}/api/market-schedule/1`, {
+      const res = await fetch(`${API_BASE_URL}/api/market-schedule/1`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          openTime: schedule.MarketOpen,
-          closeTime: schedule.MarketClose,
-          openWeekdays: [...selectedDays].sort((a, b) => a - b),
-          holidays: schedule.Holidays.split(",").map((h) => h.trim()).filter((h) => h !== ""),
-          status: schedule.MarketStatus,
+          MarketOpen: schedule.MarketOpen,
+          MarketClose: schedule.MarketClose,
+          OpenDays: [...selectedDays].sort((a, b) => a - b).join(","),
+          Holidays: schedule.Holidays,
+          MarketStatus: schedule.MarketStatus,
         }),
       });
+  
+      if (!res.ok) {
+        throw new Error("Failed to save schedule");
+      }
+  
+      setSuccessMessage("Market schedule updated successfully.");
     } catch (err) {
       console.error("Error saving market schedule:", err);
+      setErrorMessage("Failed to update market schedule. Please try again.");
     } finally {
       setSaving(false);
-      onClose();
+  
+      // Auto-close modal after 2 seconds if successful
+      if (successMessage) {
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      }
     }
   };
+    
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
@@ -173,6 +195,13 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
             </div>
 
             <div className="flex justify-end space-x-3 mt-4">
+            {successMessage && (
+                  <p className="text-green-500 text-center mt-2">{successMessage}</p>
+                )}
+                {errorMessage && (
+                  <p className="text-red-500 text-center mt-2">{errorMessage}</p>
+                )}
+
               <button
                 onClick={onClose}
                 className="bg-zinc-500 text-white px-4 py-2 rounded hover:bg-zinc-600"
