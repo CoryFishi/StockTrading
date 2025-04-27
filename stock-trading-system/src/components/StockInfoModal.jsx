@@ -44,8 +44,7 @@ const StockInfoModal = ({
     })();
   }, [isStockInfoModalOpen, selectedStock, user.userID]);
 
-  // 🆕 Fetch market open status when modal opens
-  // 🆕 Fetch market open status when modal opens
+  //Fetch market open status when modal opens
 useEffect(() => {
   if (!isStockInfoModalOpen) return;
 
@@ -84,6 +83,32 @@ useEffect(() => {
     }
   })();
 }, [isStockInfoModalOpen]);
+
+
+useEffect(() => {
+  if (!isStockInfoModalOpen || !selectedStock) return;
+
+  const fetchStock = async () => {
+    try {
+      const { data } = await axios.get("http://3.90.131.54/api/data");
+      const updatedStock = data.find((s) => s.Ticker === selectedStock.Ticker);
+      if (updatedStock) {
+        setSelectedStock((prev) => ({
+          ...prev,
+          ...updatedStock,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to refresh stock data", error);
+    }
+  };
+
+  const interval = setInterval(fetchStock, 30000); // every 30 seconds
+
+  return () => clearInterval(interval);
+}, [isStockInfoModalOpen, selectedStock, setSelectedStock]);
+
+
 
   if (!isStockInfoModalOpen || !selectedStock) return null;
 
