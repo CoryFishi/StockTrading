@@ -34,7 +34,7 @@ function sanitizeNumber(value, fallback = 0) {
   const num = parseFloat(value);
   return isNaN(num) ? fallback : num;
 }
-// -- ✅ FIXED: Update Market Status --
+// --FIXED: Update Market Status --
 function updateMarketStatus() {
   db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
     if (err) return console.error("Error fetching market schedule:", err);
@@ -72,6 +72,72 @@ function updateMarketStatus() {
     }
   });
 }
+
+// Process pending transactions - Execute Sale
+function processPendingTransactions() {
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 60 * 1000); // Transactions older than 1 min
+  console.log("🕒 Server time:", now.toISOString());
+  console.log("🔪 Cutoff time:", cutoff.toISOString());
+
+  const query = `
+    SELECT * FROM Transactions
+    WHERE TransactionStatus = 'PENDING'
+      AND Timestamp <= ?
+  `;
+
+  db.query(query, [cutoff], (err, transactions) => {
+    if (err) {
+      return console.error("Error fetching pending transactions:", err);
+    }
+
+    if (transactions.length === 0) {
+      console.log("⌛ No pending transactions ready to execute yet.");
+      return;
+    }
+
+    console.log(`🚀 Executing ${transactions.length} pending transaction(s)...`);
+
+    transactions.forEach((tx) => {
+      // 1. Mark as EXECUTED
+      const updateTransaction = `
+        UPDATE Transactions
+        SET TransactionStatus = 'EXECUTED'
+        WHERE TransactionID = ?
+      `;
+
+      db.query(updateTransaction, [tx.TransactionID], (err) => {
+        if (err) {
+          console.error(`❌ Failed to execute transaction ${tx.TransactionID}:`, err);
+          return;
+        }
+
+        console.log(`✅ Transaction ${tx.TransactionID} marked as EXECUTED.`);
+
+        // 2. Update/Add to Portfolio
+        const upsertPortfolio = `
+          INSERT INTO Portfolio (UserID, StockID, Quantity, AveragePrice)
+          VALUES (?, ?, ?, ?)
+          ON DUPLICATE KEY UPDATE
+            Quantity = Quantity + VALUES(Quantity),
+            AveragePrice = ((AveragePrice * Quantity) + (VALUES(AveragePrice) * VALUES(Quantity))) / (Quantity + VALUES(Quantity))
+        `;
+
+        db.query(upsertPortfolio, [tx.UserID, tx.StockID, tx.Quantity, tx.Price], (err) => {
+          if (err) {
+            console.error(`❌ Failed to update portfolio for user ${tx.UserID}:`, err);
+          } else {
+            console.log(`📈 Portfolio updated for user ${tx.UserID}.`);
+          }
+        });
+      });
+    });
+  });
+}
+
+
+
+
 
 
 // Buy stock endpoint (creates PENDING transaction)
@@ -164,6 +230,12 @@ setInterval(() => {
   updateStockPrices();   // update stock price histories
 }, 30000);
 //
+
+// Every 60 seconds process pending transactions
+setInterval(() => {
+  processPendingTransactions();
+}, 15000);
+
 app.get("/api/data", (req, res) => {
   console.log("/api/data was hit");
   db.query("SELECT * FROM stocks", (err, results) => {
