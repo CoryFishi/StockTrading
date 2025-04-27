@@ -19,7 +19,8 @@ const StockInfoModal = ({
   const [cashBalance, setCashBalance] = useState(0);
   const [owned, setOwned] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [marketOpen, setMarketOpen] = useState(true); // 🆕 New
+  const [marketOpen, setMarketOpen] = useState(true);
+  const [liveStock, setLiveStock] = useState(selectedStock);
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -43,74 +44,71 @@ const StockInfoModal = ({
       }
     })();
   }, [isStockInfoModalOpen, selectedStock, user.userID]);
-
   //Fetch market open status when modal opens
-useEffect(() => {
-  if (!isStockInfoModalOpen) return;
+  useEffect(() => {
+    if (!isStockInfoModalOpen) return;
 
-  (async () => {
-    try {
-      const res = await axios.get("http://3.90.131.54/api/market-schedule");
-      const data = res.data;
+    (async () => {
+      try {
+        const res = await axios.get("http://3.90.131.54/api/market-schedule");
+        const data = res.data;
 
-      const now = new Date();
-      const [openH, openM] = (data.MarketOpen || "09:00").split(":");
-      const [closeH, closeM] = (data.MarketClose || "17:00").split(":");
+        const now = new Date();
+        const [openH, openM] = (data.MarketOpen || "09:00").split(":");
+        const [closeH, closeM] = (data.MarketClose || "17:00").split(":");
 
-      const open = new Date();
-      open.setHours(openH, openM, 0, 0);
+        const open = new Date();
+        open.setHours(openH, openM, 0, 0);
 
-      const close = new Date();
-      close.setHours(closeH, closeM, 0, 0);
-
+        const close = new Date();
+        close.setHours(closeH, closeM, 0, 0);
       // Adjust so Sunday=7, Monday=1
-      let dayOfWeek = now.getDay();
-      dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+        let dayOfWeek = now.getDay();
+        dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
 
-      const openDays = (data.OpenDays || "")
-        .split(",")
-        .map(Number)
-        .filter((d) => !isNaN(d));
+        const openDays = (data.OpenDays || "")
+          .split(",")
+          .map(Number)
+          .filter((d) => !isNaN(d));
 
-      const isDayOpen = openDays.includes(dayOfWeek);
-      const isTimeOpen = now >= open && now <= close;
-      const isMarketOpen = (data.MarketStatus === 1) && isDayOpen && isTimeOpen;
+        const isDayOpen = openDays.includes(dayOfWeek);
+        const isTimeOpen = now >= open && now <= close;
+        const isMarketOpen = (data.MarketStatus === 1) && isDayOpen && isTimeOpen;
 
-      setMarketOpen(isMarketOpen);
-    } catch (error) {
-      console.error("Failed to fetch market status", error);
-      setMarketOpen(true); // fallback to allow trading if API fails
-    }
-  })();
-}, [isStockInfoModalOpen]);
-
-
-useEffect(() => {
-  if (!isStockInfoModalOpen || !selectedStock) return;
-
-  const fetchStock = async () => {
-    try {
-      const { data } = await axios.get("http://3.90.131.54/api/data");
-      const updatedStock = data.find((s) => s.Ticker === selectedStock.Ticker);
-      if (updatedStock) {
-        setSelectedStock((prev) => ({
-          ...prev,
-          ...updatedStock,
-        }));
+        setMarketOpen(isMarketOpen);
+      } catch (error) {
+        console.error("Failed to fetch market status", error);
+        setMarketOpen(true); // fallback to allow trading if API fails
       }
-    } catch (error) {
-      console.error("Failed to refresh stock data", error);
-    }
-  };
+    })();
+  }, [isStockInfoModalOpen]);
 
-  const interval = setInterval(fetchStock, 30000); // every 30 seconds
+  useEffect(() => {
+    if (!isStockInfoModalOpen || !selectedStock) return;
 
-  return () => clearInterval(interval);
-}, [isStockInfoModalOpen, selectedStock, setSelectedStock]);
+    setLiveStock(selectedStock);
 
+    const fetchStock = async () => {
+      try {
+        const { data } = await axios.get("http://3.90.131.54/api/data");
+        const updatedStock = data.find((s) => s.Ticker === selectedStock.Ticker);
+        if (updatedStock) {
+          setLiveStock((prev) => ({
+            ...prev,
+            ...updatedStock,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to refresh stock data", error);
+      }
+    };
 
+    const interval = setInterval(fetchStock, 30000);
 
-  if (!isStockInfoModalOpen || !selectedStock) return null;
+    return () => clearInterval(interval);
+  }, [isStockInfoModalOpen, selectedStock]);
+
+  if (!isStockInfoModalOpen || !liveStock) return null;
 
   const {
     CompanyName,
@@ -121,7 +119,7 @@ useEffect(() => {
     dayLow,
     dayStart,
     history = [],
-  } = selectedStock;
+  } = liveStock;
 
   const persistBalance = (bal) => {
     const u = { ...user, CashBalance: bal };
@@ -139,7 +137,7 @@ useEffect(() => {
     try {
       await axios.post("http://3.90.131.54/api/buy", {
         userID: user.userID,
-        stockID: selectedStock.id,
+        stockID: liveStock.id,
         shares: sharesInput,
         price: CurrentPrice,
       });
@@ -162,7 +160,7 @@ useEffect(() => {
     try {
       await axios.post("http://3.90.131.54/api/sell", {
         userID: user.userID,
-        stockID: selectedStock.id,
+        stockID: liveStock.id,
         shares: sharesInput,
         price: CurrentPrice,
       });
