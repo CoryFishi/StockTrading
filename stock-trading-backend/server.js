@@ -224,18 +224,19 @@ app.post("/api/sell", (req, res) => {
 
 // Function to simulate and price updates
 function updateStockPrices() {
-  console.log("Updating stock prices...");
+  console.log("📈 Updating stock prices...");
 
-  db.query("SELECT * FROM stocks", (err, results) => {
+  db.query("SELECT * FROM stocks", (err, stocks) => {
     if (err) {
       console.error("Error fetching stocks:", err);
       return;
     }
 
-    results.forEach((stock) => {
-      const currentPrice = parseFloat(stock.CurrentPrice);
+    stocks.forEach((stock) => {
       const now = new Date();
-      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(
+        now.getMinutes()
+      ).padStart(2, "0")}`;
 
       let history = [];
       try {
@@ -245,31 +246,44 @@ function updateStockPrices() {
         history = [];
       }
 
-      // Append current price to history
-      history.push({ time, price: currentPrice.toFixed(2) });
+      let newPrice = parseFloat(stock.CurrentPrice);
+
+      // 📉📈 Randomize the new price by up to ±2%
+      const fluctuation = (Math.random() * 0.04 - 0.02); // -0.02 to +0.02
+      newPrice = newPrice + newPrice * fluctuation;
+      newPrice = Math.max(0.01, parseFloat(newPrice.toFixed(2))); // No negative prices
+
+      // Update dayHigh and dayLow
+      const newDayHigh = Math.max(newPrice, parseFloat(stock.dayHigh) || newPrice);
+      const newDayLow = Math.min(newPrice, parseFloat(stock.dayLow) || newPrice);
+
+      // Save to history
+      history.push({ time, price: newPrice.toFixed(2) });
       if (history.length > 20) history.shift(); // Keep last 20 points
 
-      // Update stock history
-      db.query(
-        "UPDATE stocks SET history = ? WHERE id = ?",
-        [JSON.stringify(history), stock.id],
-        (err) => {
-          if (err) console.error(`Error updating history for ${stock.Ticker}:`, err);
-        }
-      );
+      // Update stock in database
+      const updateQuery = `
+        UPDATE stocks 
+        SET CurrentPrice = ?, dayHigh = ?, dayLow = ?, history = ?
+        WHERE id = ?
+      `;
+
+      db.query(updateQuery, [newPrice, newDayHigh, newDayLow, JSON.stringify(history), stock.id], (err) => {
+        if (err) console.error(`Error updating stock ${stock.Ticker}:`, err);
+      });
     });
 
-    // Broadcast updated stocks to frontend
+    // Broadcast updated stock prices to connected clients
     db.query("SELECT * FROM stocks", (err, updatedStocks) => {
       if (err) {
         console.error("Error fetching updated stocks:", err);
         return;
       }
-
       io.emit("stockUpdate", updatedStocks);
     });
   });
 }
+
 
 // WebSocket connection
 io.on("connection", (socket) => {
