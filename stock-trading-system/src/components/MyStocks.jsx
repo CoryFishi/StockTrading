@@ -29,22 +29,39 @@ const MyStocks = ({
 
     const fetchPortfolio = async () => {
       try {
-        const res = await fetch(
-          `http://3.90.131.54/api/portfolio/${user.userID}`
-        );
+        const res = await fetch(`http://3.90.131.54/api/portfolio/${user.userID}`);
         const data = await res.json();
-        setMyStocks(
-          data.map((entry) => ({
-            Ticker: entry.Ticker,
-            CompanyName: entry.CompanyName,
-            shares: entry.Quantity,
-            purchasePrice: parseFloat(entry.AveragePrice),
-          }))
-        );
+
+        const stockMap = {};
+
+        data.forEach((entry) => {
+          if (!stockMap[entry.Ticker]) {
+            stockMap[entry.Ticker] = {
+              Ticker: entry.Ticker,
+              CompanyName: entry.CompanyName,
+              shares: 0,
+              purchasePrice: 0,
+              totalSpent: 0,
+            };
+          }
+
+          stockMap[entry.Ticker].shares += entry.Quantity;
+          stockMap[entry.Ticker].totalSpent += entry.Quantity * parseFloat(entry.AveragePrice);
+        });
+
+        const mergedStocks = Object.values(stockMap)
+          .filter((stock) => stock.shares > 0)
+          .map((stock) => ({
+            ...stock,
+            purchasePrice: stock.shares > 0 ? stock.totalSpent / stock.shares : 0,
+          }));
+
+        setMyStocks(mergedStocks);
       } catch (err) {
         console.error("Failed to fetch portfolio:", err);
       }
     };
+
 
     // Initial fetch
     fetchPortfolio();
@@ -152,24 +169,34 @@ const MyStocks = ({
             />
           )}
         </div>
-        <div>
+
+
+        <div className="text-right space-y-1">
+          <p className="text-xs text-gray-500 dark:text-gray-300">
+            Potential Gain/Loss:
+          </p>
           <p
-            className={`text-2xl font-bold ${
-              totalGainLoss.value > 0.01
+            className={`text-2xl font-bold ${totalGainLoss.value > 0.01
                 ? "text-green-500"
                 : totalGainLoss.value < -0.01
-                ? "text-red-500"
-                : "text-zinc-800 dark:text-white"
-            }`}
+                  ? "text-red-500"
+                  : "text-zinc-800 dark:text-white"
+              }`}
           >
-            {totalGainLoss.value > 0 ? "+" : ""}$
-            {totalGainLoss.value.toFixed(2)} (
-            {totalGainLoss.percentage.toFixed(2)}%)
+            {totalGainLoss.value > 0 ? "+" : ""}
+            ${totalGainLoss.value.toFixed(2)} ({totalGainLoss.percentage.toFixed(2)}%)
           </p>
-          <p className="text-lg text-zinc-800 dark:text-zinc-100 text-right">
+
+          <p className="text-xs text-gray-500 dark:text-gray-300 mt-2">
+            Total Value:
+          </p>
+          <p className="text-lg font-semibold text-zinc-800 dark:text-white">
             ${totalCurrentValue.toFixed(2)}
           </p>
         </div>
+
+
+
       </div>
 
       {sortedStocks.length === 0 ? (
@@ -254,11 +281,10 @@ const MyStocks = ({
                       ${stock.currentPrice.toFixed(2)}
                     </td>
                     <td
-                      className={`px-4 py-2 font-bold border border-zinc-300 dark:border-zinc-600 ${
-                        stock.gainLossPercentage >= 0
+                      className={`px-4 py-2 font-bold border border-zinc-300 dark:border-zinc-600 ${stock.gainLossPercentage >= 0
                           ? "text-green-500"
                           : "text-red-500"
-                      }`}
+                        }`}
                     >
                       {stock.gainLossPercentage.toFixed(2)}%
                     </td>
