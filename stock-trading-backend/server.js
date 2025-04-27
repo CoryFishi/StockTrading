@@ -340,28 +340,59 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-//
-app.delete("/api/deleteStock/:id", (req, res) => {
-  const { id } = req.params;
+// Get all transactions for a user
+app.get("/api/transactions", (req, res) => {
+  const { userID } = req.query;
 
-  const query = "DELETE FROM stocks WHERE id = ?";
-  db.query(query, [id], (err, results) => {
+  if (!userID) {
+    return res.status(400).json({ error: "userID is required" });
+  }
+
+  const query = `
+    SELECT * FROM Transactions
+    WHERE UserID = ?
+    ORDER BY Timestamp DESC
+  `;
+
+  db.query(query, [userID], (err, results) => {
     if (err) {
-      console.error("Error deleting stock:", err);
-      return res.status(500).json({ error: "Database query failed" });
+      console.error("Error fetching transactions:", err);
+      return res.status(500).json({ error: "Database error" });
     }
-
-    if (results.affectedRows === 0) {
-      return res.status(404).json({ error: "Stock not found" });
-    }
-
-    res
-      .status(200)
-      .json({ message: `Stock with id ${id} deleted successfully` });
+    res.json(results);
   });
 });
 
-// Existing delete stock endpoint
+//cancel transaction
+
+app.post("/api/transactions/cancel", (req, res) => {
+  const { transactionID } = req.body;
+
+  if (!transactionID) {
+    return res.status(400).json({ error: "transactionID is required" });
+  }
+
+  const query = `
+    UPDATE Transactions
+    SET TransactionStatus = 'CANCELLED'
+    WHERE TransactionID = ? AND TransactionStatus = 'PENDING'
+  `;
+
+  db.query(query, [transactionID], (err, result) => {
+    if (err) {
+      console.error("Error cancelling transaction:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Transaction not found or already processed" });
+    }
+    res.json({ message: "Transaction cancelled successfully", newStatus: "CANCELLED" });
+  });
+});
+
+
+
+//delete stock endpoint
 app.delete("/api/deleteStock/:id", (req, res) => {
   const { id } = req.params;
   const query = "DELETE FROM stocks WHERE id = ?";
@@ -478,7 +509,6 @@ app.use(express.static(path.join(__dirname, "client")));
 
 
 // GET the current market schedule
-
 app.get("/api/market-schedule", (req, res) => {
   db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to fetch market schedule" });
