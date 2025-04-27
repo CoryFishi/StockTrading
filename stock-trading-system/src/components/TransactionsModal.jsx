@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import API_BASE_URL from "../config"; // ✅ Add this
 
 const TransactionsModal = ({
   isTransactionsModalOpen,
@@ -14,22 +15,24 @@ const TransactionsModal = ({
   useEffect(() => {
     if (!isTransactionsModalOpen || !user?.userID) return;
     axios
-      .get(`/api/transactions?userID=${user.userID}`)
-      .then((res) => setTransactions(res.data))
+      .get(`${API_BASE_URL}/api/transactions?userID=${user.userID}`)
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setTransactions(res.data);
+        } else {
+          console.error("Unexpected transactions response:", res.data);
+          setTransactions([]);
+        }
+      })
       .catch((err) => console.error(err));
-  }, [isTransactionsModalOpen, user?.userID]);
-
-  const handleClose = () => {
-    setMessage("");
-    setIsTransactionsModalOpen(false);
-  };
+  }, [isTransactionsModalOpen, user?.userID]); // Close useEffect properly
 
   const handleCancel = async (tx) => {
     if (busy) return;
     setBusy(true);
     setMessage("");
     try {
-      const res = await axios.post(`/api/transactions/cancel`, {
+      const res = await axios.post(`${API_BASE_URL}/api/transactions/cancel`, {
         transactionID: tx.TransactionID,
       });
       setTransactions((prev) =>
@@ -60,27 +63,13 @@ const TransactionsModal = ({
             <thead className="bg-gray-100 dark:bg-gray-700">
               <tr>
                 <th className="px-3 py-2 text-left text-sm font-medium">ID</th>
-                <th className="px-3 py-2 text-left text-sm font-medium">
-                  StockID
-                </th>
-                <th className="px-3 py-2 text-left text-sm font-medium">
-                  Type
-                </th>
-                <th className="px-3 py-2 text-right text-sm font-medium">
-                  Qty
-                </th>
-                <th className="px-3 py-2 text-right text-sm font-medium">
-                  Price
-                </th>
-                <th className="px-3 py-2 text-left text-sm font-medium">
-                  Time
-                </th>
-                <th className="px-3 py-2 text-left text-sm font-medium">
-                  Status
-                </th>
-                <th className="px-3 py-2 text-left text-sm font-medium">
-                  Actions
-                </th>
+                <th className="px-3 py-2 text-left text-sm font-medium">StockID</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Type</th>
+                <th className="px-3 py-2 text-right text-sm font-medium">Qty</th>
+                <th className="px-3 py-2 text-right text-sm font-medium">Price</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Time</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Status</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-zinc-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -89,11 +78,9 @@ const TransactionsModal = ({
                   <td className="px-3 py-2 text-sm">{tx.TransactionID}</td>
                   <td className="px-3 py-2 text-sm">{tx.StockID}</td>
                   <td className="px-3 py-2 text-sm">{tx.TransactionType}</td>
+                  <td className="px-3 py-2 text-sm text-right">{tx.Quantity}</td>
                   <td className="px-3 py-2 text-sm text-right">
-                    {tx.Quantity}
-                  </td>
-                  <td className="px-3 py-2 text-sm text-right">
-                    ${tx.Price.toFixed(2)}
+                    {tx.Price != null ? `$${tx.Price.toFixed(2)}` : "-"} {/* ✅ Safer */}
                   </td>
                   <td className="px-3 py-2 text-sm">
                     {new Date(tx.Timestamp).toLocaleString()}
@@ -139,7 +126,7 @@ const TransactionsModal = ({
         <div className="flex justify-center">
           <button
             className="px-4 py-2 bg-gray-400 dark:text-black rounded hover:bg-gray-500"
-            onClick={handleClose}
+            onClick={() => setIsTransactionsModalOpen(false)}
             disabled={busy}
           >
             Close
