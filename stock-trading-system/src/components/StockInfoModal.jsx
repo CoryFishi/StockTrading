@@ -19,6 +19,7 @@ const StockInfoModal = ({
   const [cashBalance, setCashBalance] = useState(0);
   const [owned, setOwned] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [marketOpen, setMarketOpen] = useState(true); // 🆕 New
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -42,6 +43,21 @@ const StockInfoModal = ({
       }
     })();
   }, [isStockInfoModalOpen, selectedStock, user.userID]);
+
+  // 🆕 Fetch market open status when modal opens
+  useEffect(() => {
+    if (!isStockInfoModalOpen) return;
+
+    (async () => {
+      try {
+        const res = await axios.get("http://3.90.131.54/api/market-schedule");
+        setMarketOpen(res.data.status === true); // assuming API returns { status: true/false }
+      } catch (error) {
+        console.error("Failed to fetch market status", error);
+        setMarketOpen(true); // fallback to allow trading if API fails
+      }
+    })();
+  }, [isStockInfoModalOpen]);
 
   if (!isStockInfoModalOpen || !selectedStock) return null;
 
@@ -147,6 +163,7 @@ const StockInfoModal = ({
             </span>
           </div>
         </div>
+
         {history.length > 0 && (
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
@@ -169,6 +186,13 @@ const StockInfoModal = ({
             </ResponsiveContainer>
           </div>
         )}
+
+        {!marketOpen && (
+          <p className="text-center text-red-500 font-semibold">
+            Market is closed. You cannot buy or sell right now.
+          </p>
+        )}
+
         <div className="flex items-center space-x-2">
           <input
             type="number"
@@ -180,18 +204,19 @@ const StockInfoModal = ({
           <button
             className="flex-1 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 disabled:opacity-40"
             onClick={handleBuy}
-            disabled={busy}
+            disabled={busy || !marketOpen}
           >
             Buy
           </button>
           <button
             className="flex-1 bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 disabled:opacity-40"
             onClick={handleSell}
-            disabled={busy || owned === 0}
+            disabled={busy || owned === 0 || !marketOpen}
           >
             Sell
           </button>
         </div>
+
         {message && (
           <p className="text-center text-sm mt-2 text-blue-500">{message}</p>
         )}
