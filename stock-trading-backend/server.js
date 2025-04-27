@@ -477,24 +477,23 @@ app.get("/api/market-schedule", (req, res) => {
 // PUT update market schedule
 app.put("/api/market-schedule/:id", (req, res) => {
   const { id } = req.params;
-  const { openTime, closeTime, openWeekdays, holidays, status } = req.body;
+  const { MarketOpen, MarketClose, OpenDays, Holidays, MarketStatus } = req.body;
 
   const updateQuery = `
-  UPDATE MarketSchedule
-  SET MarketOpen = ?, MarketClose = ?, OpenDays = ?, Holidays = ?, MarketStatus = ?
-  WHERE MarketScheduleID = ?
-`;
-
+    UPDATE MarketSchedule
+    SET MarketOpen = ?, MarketClose = ?, OpenDays = ?, Holidays = ?, MarketStatus = ?
+    WHERE MarketScheduleID = ?
+  `;
 
   db.query(
     updateQuery,
     [
-      openTime,
-      closeTime,
-      openWeekdays.join(","),
-      (holidays || []).join(","),
-      status ? 1 : 0,
-      id
+      MarketOpen,
+      MarketClose,
+      OpenDays,
+      Holidays,
+      MarketStatus,
+      id,
     ],
     (err, result) => {
       if (err) {
@@ -506,6 +505,7 @@ app.put("/api/market-schedule/:id", (req, res) => {
     }
   );
 });
+
 
 // post to deposit cash
 app.post("/api/deposit", (req, res) => {

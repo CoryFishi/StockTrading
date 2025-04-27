@@ -27,33 +27,34 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
   const [schedule, setSchedule] = useState({
     MarketOpen: "09:00:00",
     MarketClose: "17:00:00",
-    OpenDays: "Mon-Fri",
     Holidays: "",
     MarketStatus: 1,
   });
+  const [selectedDays, setSelectedDays] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
+  
     (async () => {
       setLoading(true);
       try {
         const res = await fetch(`${API_BASE_URL}/api/market-schedule`);
         const data = await res.json();
-        
-        const normalized = {
+  
+        setSchedule({
           MarketOpen: data.openTime || "",
           MarketClose: data.closeTime || "",
-          OpenDays: Array.isArray(data.openWeekdays) ? data.openWeekdays.join(",") : "",
           Holidays: Array.isArray(data.holidays) ? data.holidays.join(",") : "",
           MarketStatus: data.status ? 1 : 0,
-        };
-        
-        setSchedule(normalized);
-        
-        console.log("Fetched market schedule:", data); // ✅ Log it
-        setSchedule(data);
+        });
+  
+        if (Array.isArray(data.openWeekdays)) {
+          setSelectedDays(data.openWeekdays.map(Number));
+        } else {
+          setSelectedDays([]);
+        }
       } catch (err) {
         console.error("Failed to fetch market schedule:", err);
       } finally {
@@ -61,9 +62,17 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
       }
     })();
   }, [isOpen]);
-
+  
   const handleChange = (key, value) => {
     setSchedule((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const toggleDay = (dayNumber) => {
+    setSelectedDays((prev) =>
+      prev.includes(dayNumber)
+        ? prev.filter((d) => d !== dayNumber)
+        : [...prev, dayNumber]
+    );
   };
 
   const handleSave = async () => {
@@ -72,7 +81,13 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
       await fetch(`${API_BASE_URL}/api/market-schedule/1`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(schedule),
+        body: JSON.stringify({
+          openTime: schedule.MarketOpen,
+          closeTime: schedule.MarketClose,
+          openWeekdays: [...selectedDays].sort((a, b) => a - b),
+          holidays: schedule.Holidays.split(",").map((h) => h.trim()).filter((h) => h !== ""),
+          status: schedule.MarketStatus,
+        }),
       });
     } catch (err) {
       console.error("Error saving market schedule:", err);
@@ -114,15 +129,24 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
                   onChange={(e) => handleChange("MarketClose", e.target.value)}
                 />
               </div>
+
               <div className="col-span-2">
-                <label className="text-sm font-medium">Open Days</label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded dark:bg-zinc-700 dark:text-white"
-                  value={schedule.OpenDays}
-                  onChange={(e) => handleChange("OpenDays", e.target.value)}
-                />
+                <label className="text-sm font-medium block mb-1">Open Days</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {WEEKDAYS.map((day, idx) => (
+                    <label key={idx} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedDays.includes(idx + 1)}
+                        onChange={() => toggleDay(idx + 1)}
+                        className="form-checkbox"
+                      />
+                      <span>{day}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
+
               <div className="col-span-2">
                 <label className="text-sm font-medium">Holidays</label>
                 <input
@@ -132,6 +156,7 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
                   onChange={(e) => handleChange("Holidays", e.target.value)}
                 />
               </div>
+
               <div className="col-span-2">
                 <label className="text-sm font-medium">Market Status</label>
                 <select
@@ -147,7 +172,7 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-3 mt-4">
               <button
                 onClick={onClose}
                 className="bg-zinc-500 text-white px-4 py-2 rounded hover:bg-zinc-600"
