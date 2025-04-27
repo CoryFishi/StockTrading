@@ -80,8 +80,9 @@ const TransactionsModal = ({
                   <td className="px-3 py-2 text-sm">{tx.TransactionType}</td>
                   <td className="px-3 py-2 text-sm text-right">{tx.Quantity}</td>
                   <td className="px-3 py-2 text-sm text-right">
-                    {tx.Price != null ? `$${tx.Price.toFixed(2)}` : "-"} {/* ✅ Safer */}
+                       {tx.Price != null ? `$${parseFloat(tx.Price).toFixed(2)}` : "-"}
                   </td>
+
                   <td className="px-3 py-2 text-sm">
                     {new Date(tx.Timestamp).toLocaleString()}
                   </td>
