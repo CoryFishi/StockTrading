@@ -13,6 +13,7 @@ const StockInfoModal = ({
   isStockInfoModalOpen,
   setIsStockInfoModalOpen,
   selectedStock,
+  setSelectedStock, 
 }) => {
   const [sharesInput, setSharesInput] = useState(1);
   const [message, setMessage] = useState("");
