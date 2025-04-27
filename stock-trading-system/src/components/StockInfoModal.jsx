@@ -51,7 +51,31 @@ const StockInfoModal = ({
     (async () => {
       try {
         const res = await axios.get("http://3.90.131.54/api/market-schedule");
-        setMarketOpen(res.data.status === true); // assuming API returns { status: true/false }
+        const data = res.data;
+
+        const now = new Date();
+        const [openH, openM] = (data.openTime || "09:00").split(":");
+        const [closeH, closeM] = (data.closeTime || "17:00").split(":");
+
+        const open = new Date();
+        open.setHours(openH, openM, 0, 0);
+
+        const close = new Date();
+        close.setHours(closeH, closeM, 0, 0);
+
+        // Adjust so Sunday=7, Monday=1
+        let dayOfWeek = now.getDay();
+        dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; 
+
+        const openDays = Array.isArray(data.openWeekdays)
+          ? data.openWeekdays.map(Number)
+          : [];
+
+        const isDayOpen = openDays.includes(dayOfWeek);
+        const isTimeOpen = now >= open && now <= close;
+        const isMarketOpen = data.status && isDayOpen && isTimeOpen;
+
+        setMarketOpen(isMarketOpen);
       } catch (error) {
         console.error("Failed to fetch market status", error);
         setMarketOpen(true); // fallback to allow trading if API fails
@@ -151,6 +175,7 @@ const StockInfoModal = ({
             </p>
           </div>
         </div>
+
         <div className="grid grid-cols-2 gap-4 text-sm dark:text-white text-black">
           <div>Day Start: ${dayStart ?? "N/A"}</div>
           <div>Day High: ${dayHigh}</div>
@@ -220,6 +245,7 @@ const StockInfoModal = ({
         {message && (
           <p className="text-center text-sm mt-2 text-blue-500">{message}</p>
         )}
+
         <button
           onClick={() => setIsStockInfoModalOpen(false)}
           className="w-full mt-4 bg-zinc-300 dark:bg-zinc-700 py-2 rounded hover:bg-zinc-400 dark:hover:bg-zinc-600"
