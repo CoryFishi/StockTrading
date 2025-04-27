@@ -78,6 +78,28 @@ function updateMarketStatus() {
 }
 
 
+// Buy stock endpoint (creates PENDING transaction)
+app.post("/api/buy", (req, res) => {
+  const { userID, stockID, shares, price } = req.body;
+
+  if (!userID || !stockID || !shares || !price) {
+    return res.status(400).json({ error: "Missing required fields." });
+  }
+
+  const insertQuery = `
+    INSERT INTO Transactions (UserID, StockID, TransactionType, Quantity, Price, TransactionStatus)
+    VALUES (?, ?, 'BUY', ?, ?, 'PENDING')
+  `;
+
+  db.query(insertQuery, [userID, stockID, shares, price], (err, result) => {
+    if (err) {
+      console.error("Error inserting transaction:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    res.json({ message: "Buy order placed successfully (Pending)." });
+  });
+});
 
 
 
