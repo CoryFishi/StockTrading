@@ -90,11 +90,11 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          MarketOpen: schedule.MarketOpen,
-          MarketClose: schedule.MarketClose,
-          OpenDays: [...selectedDays].sort((a, b) => a - b).join(","),
-          Holidays: schedule.Holidays,
-          MarketStatus: schedule.MarketStatus,
+          openTime: schedule.MarketOpen,               // <-- corrected
+          closeTime: schedule.MarketClose,             // <-- corrected
+          openWeekdays: [...selectedDays].sort((a, b) => a - b), // <-- corrected
+          holidays: schedule.Holidays,                 // <-- corrected
+          status: schedule.MarketStatus,               // <-- corrected
         }),
       });
   
@@ -109,7 +109,6 @@ const MarketScheduleModal = ({ isOpen, onClose }) => {
     } finally {
       setSaving(false);
   
-      // Auto-close modal after 2 seconds if successful
       if (successMessage) {
         setTimeout(() => {
           onClose();
