@@ -239,16 +239,25 @@ function updateStockPrices() {
       ).padStart(2, "0")}`;
 
       let history = [];
+
       try {
-        history = JSON.parse(stock.history) || [];
-        if (!Array.isArray(history)) history = [];
-      } catch {
+        if (stock.history) {
+          history = JSON.parse(stock.history);
+          if (!Array.isArray(history)) {
+            history = [];
+          }
+        } else {
+          history = [];
+        }
+      } catch (error) {
+        console.error(`Error parsing history for ${stock.Ticker}:`, error);
         history = [];
       }
+      
 
       let newPrice = parseFloat(stock.CurrentPrice);
 
-      // 📉📈 Randomize the new price by up to ±2%
+      // Randomize the new price by up to ±2%
       const fluctuation = (Math.random() * 0.04 - 0.02); // -0.02 to +0.02
       newPrice = newPrice + newPrice * fluctuation;
       newPrice = Math.max(0.01, parseFloat(newPrice.toFixed(2))); // No negative prices
@@ -271,6 +280,9 @@ function updateStockPrices() {
       db.query(updateQuery, [newPrice, newDayHigh, newDayLow, JSON.stringify(history), stock.id], (err) => {
         if (err) console.error(`Error updating stock ${stock.Ticker}:`, err);
       });
+
+      console.log(`Updating ${stock.Ticker}: ${history.length} history points`);
+
     });
 
     // Broadcast updated stock prices to connected clients
