@@ -37,8 +37,43 @@ function sanitizeNumber(value, fallback = 0) {
 
 // Function to simulate and price updates
 function updateStockPrices() {
-  console.log("Updating stock prices...");
+// Check if market should be open or closed
+db.query("SELECT * FROM MarketSchedule LIMIT 1", (err, results) => {
+  if (err) {
+    console.error("Error fetching market schedule:", err);
+    return;
+  }
 
+  if (results.length > 0) {
+    const schedule = results[0];
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const [openHour, openMinute] = (schedule.MarketOpen || "09:00:00").split(":").map(Number);
+    const [closeHour, closeMinute] = (schedule.MarketClose || "17:00:00").split(":").map(Number);
+
+    const openMinutes = openHour * 60 + openMinute;
+    const closeMinutes = closeHour * 60 + closeMinute;
+
+    let newStatus = (currentMinutes >= openMinutes && currentMinutes <= closeMinutes) ? 1 : 0;
+
+    if (newStatus !== schedule.MarketStatus) {
+      db.query(
+        "UPDATE MarketSchedule SET MarketStatus = ? WHERE MarketScheduleID = ?",
+        [newStatus, schedule.MarketScheduleID],
+        (updateErr) => {
+          if (updateErr) {
+            console.error("Failed to update MarketStatus:", updateErr);
+          } else {
+            console.log(`Market status updated to: ${newStatus === 1 ? "Open" : "Closed"}`);
+          }
+        }
+      );
+    }
+  }
+});
+
+  console.log("Updating stock prices...");
   db.query("SELECT * FROM stocks", (err, results) => {
     if (err) {
       console.error("Error fetching stocks:", err);
