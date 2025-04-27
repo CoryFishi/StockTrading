@@ -99,7 +99,6 @@ function processPendingTransactions() {
     console.log(`🚀 Executing ${transactions.length} pending transaction(s)...`);
 
     transactions.forEach((tx) => {
-      // 1. Mark as EXECUTED
       const updateTransaction = `
         UPDATE Transactions
         SET TransactionStatus = 'EXECUTED'
@@ -108,28 +107,61 @@ function processPendingTransactions() {
 
       db.query(updateTransaction, [tx.TransactionID], (err) => {
         if (err) {
-          console.error(`❌ Failed to execute transaction ${tx.TransactionID}:`, err);
+          console.error(`Failed to execute transaction ${tx.TransactionID}:`, err);
           return;
         }
 
         console.log(`✅ Transaction ${tx.TransactionID} marked as EXECUTED.`);
 
-        // 2. Update/Add to Portfolio
-        const upsertPortfolio = `
-          INSERT INTO Portfolio (UserID, StockID, Quantity, AveragePrice)
-          VALUES (?, ?, ?, ?)
-          ON DUPLICATE KEY UPDATE
-            Quantity = Quantity + VALUES(Quantity),
-            AveragePrice = ((AveragePrice * Quantity) + (VALUES(AveragePrice) * VALUES(Quantity))) / (Quantity + VALUES(Quantity))
-        `;
+        if (tx.TransactionType === 'BUY') {
+          const upsertPortfolio = `
+            INSERT INTO Portfolio (UserID, StockID, Quantity, AveragePrice)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              Quantity = Quantity + VALUES(Quantity),
+              AveragePrice = ((AveragePrice * Quantity) + (VALUES(AveragePrice) * VALUES(Quantity))) / (Quantity + VALUES(Quantity))
+          `;
 
-        db.query(upsertPortfolio, [tx.UserID, tx.StockID, tx.Quantity, tx.Price], (err) => {
-          if (err) {
-            console.error(`❌ Failed to update portfolio for user ${tx.UserID}:`, err);
-          } else {
-            console.log(`📈 Portfolio updated for user ${tx.UserID}.`);
-          }
-        });
+          db.query(upsertPortfolio, [tx.UserID, tx.StockID, tx.Quantity, tx.Price], (err) => {
+            if (err) {
+              console.error(`Failed to update portfolio for user ${tx.UserID}:`, err);
+            } else {
+              console.log(`📈 Portfolio updated for user ${tx.UserID}.`);
+            }
+          });
+
+        } else if (tx.TransactionType === 'SELL') {
+          const sellPortfolio = `
+            UPDATE Portfolio
+            SET Quantity = Quantity - ?
+            WHERE UserID = ? AND StockID = ? AND Quantity >= ?
+          `;
+
+          db.query(sellPortfolio, [tx.Quantity, tx.UserID, tx.StockID, tx.Quantity], (err, result) => {
+            if (err) {
+              console.error(`Failed to process sell for user ${tx.UserID}:`, err);
+            } else if (result.affectedRows === 0) {
+              console.error(`❗ Sell failed: user ${tx.UserID} doesn't have enough shares.`);
+            } else {
+              console.log(`📉 Portfolio updated after sell for user ${tx.UserID}.`);
+
+              // 💵 Now add sale proceeds to user's cash account
+              const proceeds = tx.Quantity * parseFloat(tx.Price);
+              const updateCash = `
+                INSERT INTO CashAccounts (UserID, Balance)
+                VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE Balance = Balance + VALUES(Balance)
+              `;
+              db.query(updateCash, [tx.UserID, proceeds], (cashErr) => {
+                if (cashErr) {
+                  console.error(`Failed to update cash balance for user ${tx.UserID}:`, cashErr);
+                } else {
+                  console.log(`💰 Cash balance updated for user ${tx.UserID} by $${proceeds.toFixed(2)}.`);
+                }
+              });
+            }
+          });
+        }
       });
     });
   });
@@ -160,6 +192,31 @@ app.post("/api/buy", (req, res) => {
     }
 
     res.json({ message: "Buy order placed successfully (Pending)." });
+  });
+});
+
+
+
+// Sell stock endpoint (creates PENDING transaction)
+app.post("/api/sell", (req, res) => {
+  const { userID, stockID, shares, price } = req.body;
+
+  if (!userID || !stockID || !shares || !price) {
+    return res.status(400).json({ error: "Missing required fields." });
+  }
+
+  const insertQuery = `
+    INSERT INTO Transactions (UserID, StockID, TransactionType, Quantity, Price, TransactionStatus)
+    VALUES (?, ?, 'SELL', ?, ?, 'PENDING')
+  `;
+
+  db.query(insertQuery, [userID, stockID, shares, price], (err, result) => {
+    if (err) {
+      console.error("Error inserting sell transaction:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    res.json({ message: "Sell order placed successfully (Pending)." });
   });
 });
 
